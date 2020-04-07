@@ -13,7 +13,6 @@ POD_HOSTNAME_3=$(awk 'NR==4 { print $3}' podNameAndIP.txt)
 SINGLE_POD_NAME=$(awk 'NR==5 { print $1}' podNameAndIP.txt)
 SINGLE_POD_IP=$(awk 'NR==5 { print $2}' podNameAndIP.txt)
 SINGLE_POD_HOSTNAME=$(awk 'NR==5 { print $3}' podNameAndIP.txt)
-echo -e "TCP TEST\n" > TCP_IPERF_OUTPUT.txt
 echo -e "POD 1 to other PODS...\n"
 echo -e "----------------------------------------------\n\n"
 kubectl exec -it $POD_NAME_1 -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"$POD_IP_1\" \"$POD_IP_1\" \"$POD_HOSTNAME_1\" \"$POD_HOSTNAME_1\" \"$POD_NAME_1\" \"$POD_NAME_1\""

@@ -1,6 +1,6 @@
 #!/bin/sh
 HOSTNAME=$(hostname)
-ip a | grep "eth1" | grep "inet" | awk 'NR==1 { print $2}' > example.txt
+/sbin/ip a | grep "eth1" | grep "inet" | awk 'NR==1 { print $2}' > example.txt
 IP_HOSTNAME=$(sed -e 's/.\{3\}$//' example.txt)
 echo $IP_HOSTNAME
 #Install package if not installed
@@ -21,8 +21,7 @@ SINGLE_POD_NAME=$(awk 'NR==5 { print $1}' podNameAndIP.txt)
 SINGLE_POD_IP=$(awk 'NR==5 { print $2}' podNameAndIP.txt)
 SINGLE_POD_HOSTNAME=$(awk 'NR==5 { print $3}' podNameAndIP.txt)
 SINGLE_POD_IP=$(awk 'NR==5 { print $2}' podNameAndIP.txt)
-echo -e "TCP TEST\n" > TCP_IPERF_NODE_OUTPUT.txt
-echo -e "NODE to other PODS...\n"
+echo -e "$HOSTNAME to other PODS...\n"
 echo -e "----------------------------------------------\n\n"
 /vagrant/ext/kites/scripts/linux/iperf-test-node.sh \"$IP_HOSTNAME\" \"$POD_IP_1\" \"$HOSTNAME\" \"$POD_HOSTNAME_1\" "NO_POD" \"$POD_NAME_1\"
 /vagrant/ext/kites/scripts/linux/iperf-test-node.sh \"$IP_HOSTNAME\" \"$POD_IP_2\" \"$HOSTNAME\" \"$POD_HOSTNAME_2\" "NO_POD" \"$POD_NAME_2\"
