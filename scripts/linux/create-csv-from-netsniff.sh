@@ -3,14 +3,16 @@
 cd /vagrant/ext/kites/pod-shared/tests
 CNI=$1
 TEST_TYPE=$2
-PPS=$3
-VM_SRC=$4
-VM_DEST=$5
-POD_SRC=$6
-POD_DEST=$7
-IP_SRC=$8
-IP_DEST=$9
-INCOMING=${10}
-PASSED=${11}
-RX_TIME=${12}
-echo "$CNI, $TEST_TYPE, $PPS, $VM_SRC, $VM_DEST, $POD_SRC, $POD_DEST, $IP_SRC, $IP_DEST, ,$INCOMING, $PASSED, ,$RX_TIME" >> netsniff-tests.csv
+ID_EXP=$3
+PPS=$4
+VM_SRC=$5
+VM_DEST=$6
+POD_SRC=$7
+POD_DEST=$8
+IP_SRC=$9
+IP_DEST=${10}
+INCOMING=${11}
+PASSED=${12}
+RX_TIME=${13}
+TIMESTAMP=${14}
+echo "$CNI, $TEST_TYPE, $ID_EXP, $PPS, $VM_SRC, $VM_DEST, $POD_SRC, $POD_DEST, $IP_SRC, $IP_DEST, ,$INCOMING, $PASSED, ,$RX_TIME, $TIMESTAMP" >> netsniff-tests.csv

@@ -20,6 +20,7 @@ FOLDER_SINGLE_POD=single-pod
 INTER_EXPERIMENT_SLEEP=5
 PPS=$1
 BYTE=$2
+ID_EXP=$3
 echo -e "NETSNIFF TEST - ${BYTE}byte - ${PPS}pps\n" > NETSNIFF-${BYTE}byte-${PPS}pps.txt
 echo -e "TRAFGEN TEST - ${BYTE}byte - ${PPS}pps\n" > TRAFGEN-${BYTE}byte-${PPS}pps.txt
 echo -e "\n..................POD 1 TEST..................\n"
@@ -35,14 +36,14 @@ else
     mkdir -p $BASE_FOLDER/$FOLDER_POD_1 && cd $BASE_FOLDER/$FOLDER_POD_1
 fi
 
-kubectl exec -it $POD_NAME_1 -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh samePod-${BYTE}byte-${PPS}pps.pcap \"$POD_IP_1\" \"$POD_IP_1\" \"$POD_HOSTNAME_1\" \"$POD_HOSTNAME_1\" \"$POD_NAME_1\" \"$POD_NAME_1\" $FOLDER_POD_1 $BYTE $PPS" &
-kubectl exec -it $POD_NAME_1 -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh samePod-${BYTE}byte-${PPS}pps.cfg \"$POD_IP_1\" \"$POD_IP_1\" \"$POD_HOSTNAME_1\" \"$POD_HOSTNAME_1\" \"$POD_NAME_1\" \"$POD_NAME_1\" $FOLDER_POD_1 $BYTE $PPS"
+kubectl exec -it $POD_NAME_1 -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh samePod-${BYTE}byte.pcap \"$POD_IP_1\" \"$POD_IP_1\" \"$POD_HOSTNAME_1\" \"$POD_HOSTNAME_1\" \"$POD_NAME_1\" \"$POD_NAME_1\" $FOLDER_POD_1 $BYTE $PPS $ID_EXP" &
+kubectl exec -it $POD_NAME_1 -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh samePod-${BYTE}byte.cfg \"$POD_IP_1\" \"$POD_IP_1\" \"$POD_HOSTNAME_1\" \"$POD_HOSTNAME_1\" \"$POD_NAME_1\" \"$POD_NAME_1\" $FOLDER_POD_1 $BYTE $PPS"
 sleep $INTER_EXPERIMENT_SLEEP
-kubectl exec -it $POD_NAME_2 -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh pod1ToPod2-${BYTE}byte-${PPS}pps.pcap \"$POD_IP_1\" \"$POD_IP_2\" \"$POD_HOSTNAME_1\" \"$POD_HOSTNAME_2\" \"$POD_NAME_1\" \"$POD_NAME_2\" $FOLDER_POD_1 $BYTE $PPS" &
-kubectl exec -it $POD_NAME_1 -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh pod1ToPod2-${BYTE}byte-${PPS}pps.cfg \"$POD_IP_1\" \"$POD_IP_2\" \"$POD_HOSTNAME_1\" \"$POD_HOSTNAME_2\" \"$POD_NAME_1\" \"$POD_NAME_2\" $FOLDER_POD_1 $BYTE $PPS"
+kubectl exec -it $POD_NAME_2 -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh pod1ToPod2-${BYTE}byte.pcap \"$POD_IP_1\" \"$POD_IP_2\" \"$POD_HOSTNAME_1\" \"$POD_HOSTNAME_2\" \"$POD_NAME_1\" \"$POD_NAME_2\" $FOLDER_POD_1 $BYTE $PPS $ID_EXP" &
+kubectl exec -it $POD_NAME_1 -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh pod1ToPod2-${BYTE}byte.cfg \"$POD_IP_1\" \"$POD_IP_2\" \"$POD_HOSTNAME_1\" \"$POD_HOSTNAME_2\" \"$POD_NAME_1\" \"$POD_NAME_2\" $FOLDER_POD_1 $BYTE $PPS"
 sleep $INTER_EXPERIMENT_SLEEP
-kubectl exec -it $POD_NAME_3 -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh pod1ToPod3-${BYTE}byte-${PPS}pps.pcap \"$POD_IP_1\" \"$POD_IP_3\" \"$POD_HOSTNAME_1\" \"$POD_HOSTNAME_3\" \"$POD_NAME_1\" \"$POD_NAME_3\" $FOLDER_POD_1 $BYTE $PPS" &
-kubectl exec -it $POD_NAME_1 -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh pod1ToPod3-${BYTE}byte-${PPS}pps.cfg \"$POD_IP_1\" \"$POD_IP_3\" \"$POD_HOSTNAME_1\" \"$POD_HOSTNAME_3\" \"$POD_NAME_1\" \"$POD_NAME_3\" $FOLDER_POD_1 $BYTE $PPS"
+kubectl exec -it $POD_NAME_3 -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh pod1ToPod3-${BYTE}byte.pcap \"$POD_IP_1\" \"$POD_IP_3\" \"$POD_HOSTNAME_1\" \"$POD_HOSTNAME_3\" \"$POD_NAME_1\" \"$POD_NAME_3\" $FOLDER_POD_1 $BYTE $PPS $ID_EXP" &
+kubectl exec -it $POD_NAME_1 -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh pod1ToPod3-${BYTE}byte.cfg \"$POD_IP_1\" \"$POD_IP_3\" \"$POD_HOSTNAME_1\" \"$POD_HOSTNAME_3\" \"$POD_NAME_1\" \"$POD_NAME_3\" $FOLDER_POD_1 $BYTE $PPS"
 sleep $INTER_EXPERIMENT_SLEEP
 
 echo -e "\n..................POD 2 TEST..................\n"
@@ -58,14 +59,14 @@ else
     mkdir -p $BASE_FOLDER/$FOLDER_POD_2 && cd $BASE_FOLDER/$FOLDER_POD_2
 fi
 
-kubectl exec -it $POD_NAME_2 -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh samePod-${BYTE}byte-${PPS}pps.pcap \"$POD_IP_2\" \"$POD_IP_2\" \"$POD_HOSTNAME_2\" \"$POD_HOSTNAME_2\" \"$POD_NAME_2\" \"$POD_NAME_2\" $FOLDER_POD_2 $BYTE $PPS" &
-kubectl exec -it $POD_NAME_2 -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh samePod-${BYTE}byte-${PPS}pps.cfg \"$POD_IP_2\" \"$POD_IP_2\" \"$POD_HOSTNAME_2\" \"$POD_HOSTNAME_2\" \"$POD_NAME_2\" \"$POD_NAME_2\" $FOLDER_POD_2 $BYTE $PPS"
+kubectl exec -it $POD_NAME_2 -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh samePod-${BYTE}byte.pcap \"$POD_IP_2\" \"$POD_IP_2\" \"$POD_HOSTNAME_2\" \"$POD_HOSTNAME_2\" \"$POD_NAME_2\" \"$POD_NAME_2\" $FOLDER_POD_2 $BYTE $PPS $ID_EXP" &
+kubectl exec -it $POD_NAME_2 -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh samePod-${BYTE}byte.cfg \"$POD_IP_2\" \"$POD_IP_2\" \"$POD_HOSTNAME_2\" \"$POD_HOSTNAME_2\" \"$POD_NAME_2\" \"$POD_NAME_2\" $FOLDER_POD_2 $BYTE $PPS"
 sleep $INTER_EXPERIMENT_SLEEP
-kubectl exec -it $POD_NAME_1 -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh pod2ToPod1-${BYTE}byte-${PPS}pps.pcap \"$POD_IP_2\" \"$POD_IP_1\" \"$POD_HOSTNAME_2\" \"$POD_HOSTNAME_1\" \"$POD_NAME_2\" \"$POD_NAME_1\" $FOLDER_POD_2 $BYTE $PPS" &
-kubectl exec -it $POD_NAME_2 -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh pod2ToPod1-${BYTE}byte-${PPS}pps.cfg \"$POD_IP_2\" \"$POD_IP_1\" \"$POD_HOSTNAME_2\" \"$POD_HOSTNAME_1\" \"$POD_NAME_2\" \"$POD_NAME_1\" $FOLDER_POD_2 $BYTE $PPS"
+kubectl exec -it $POD_NAME_1 -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh pod2ToPod1-${BYTE}byte.pcap \"$POD_IP_2\" \"$POD_IP_1\" \"$POD_HOSTNAME_2\" \"$POD_HOSTNAME_1\" \"$POD_NAME_2\" \"$POD_NAME_1\" $FOLDER_POD_2 $BYTE $PPS $ID_EXP" &
+kubectl exec -it $POD_NAME_2 -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh pod2ToPod1-${BYTE}byte.cfg \"$POD_IP_2\" \"$POD_IP_1\" \"$POD_HOSTNAME_2\" \"$POD_HOSTNAME_1\" \"$POD_NAME_2\" \"$POD_NAME_1\" $FOLDER_POD_2 $BYTE $PPS"
 sleep $INTER_EXPERIMENT_SLEEP
-kubectl exec -it $POD_NAME_3 -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh pod2ToPod3-${BYTE}byte-${PPS}pps.pcap \"$POD_IP_2\" \"$POD_IP_3\" \"$POD_HOSTNAME_2\" \"$POD_HOSTNAME_3\" \"$POD_NAME_2\" \"$POD_NAME_3\" $FOLDER_POD_2 $BYTE $PPS" &
-kubectl exec -it $POD_NAME_2 -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh pod2ToPod3-${BYTE}byte-${PPS}pps.cfg \"$POD_IP_2\" \"$POD_IP_3\" \"$POD_HOSTNAME_2\" \"$POD_HOSTNAME_3\" \"$POD_NAME_2\" \"$POD_NAME_3\" $FOLDER_POD_2 $BYTE $PPS"
+kubectl exec -it $POD_NAME_3 -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh pod2ToPod3-${BYTE}byte.pcap \"$POD_IP_2\" \"$POD_IP_3\" \"$POD_HOSTNAME_2\" \"$POD_HOSTNAME_3\" \"$POD_NAME_2\" \"$POD_NAME_3\" $FOLDER_POD_2 $BYTE $PPS $ID_EXP" &
+kubectl exec -it $POD_NAME_2 -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh pod2ToPod3-${BYTE}byte.cfg \"$POD_IP_2\" \"$POD_IP_3\" \"$POD_HOSTNAME_2\" \"$POD_HOSTNAME_3\" \"$POD_NAME_2\" \"$POD_NAME_3\" $FOLDER_POD_2 $BYTE $PPS"
 
 echo -e "\n..................POD 3 TEST..................\n"
 echo -e "----------------------------------------------\n\n"
@@ -80,14 +81,14 @@ else
     mkdir -p $BASE_FOLDER/$FOLDER_POD_3 && cd $BASE_FOLDER/$FOLDER_POD_3
 fi
 
-kubectl exec -it $POD_NAME_3 -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh samePod-${BYTE}byte-${PPS}pps.pcap \"$POD_IP_3\" \"$POD_IP_3\" \"$POD_HOSTNAME_3\" \"$POD_HOSTNAME_3\" \"$POD_NAME_3\" \"$POD_NAME_3\" $FOLDER_POD_3 $BYTE $PPS" &
-kubectl exec -it $POD_NAME_3 -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh samePod-${BYTE}byte-${PPS}pps.cfg \"$POD_IP_3\" \"$POD_IP_3\" \"$POD_HOSTNAME_3\" \"$POD_HOSTNAME_3\" \"$POD_NAME_3\" \"$POD_NAME_3\" $FOLDER_POD_3 $BYTE $PPS"
+kubectl exec -it $POD_NAME_3 -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh samePod-${BYTE}byte.pcap \"$POD_IP_3\" \"$POD_IP_3\" \"$POD_HOSTNAME_3\" \"$POD_HOSTNAME_3\" \"$POD_NAME_3\" \"$POD_NAME_3\" $FOLDER_POD_3 $BYTE $PPS $ID_EXP" &
+kubectl exec -it $POD_NAME_3 -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh samePod-${BYTE}byte.cfg \"$POD_IP_3\" \"$POD_IP_3\" \"$POD_HOSTNAME_3\" \"$POD_HOSTNAME_3\" \"$POD_NAME_3\" \"$POD_NAME_3\" $FOLDER_POD_3 $BYTE $PPS"
 sleep $INTER_EXPERIMENT_SLEEP
-kubectl exec -it $POD_NAME_1 -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh pod3ToPod1-${BYTE}byte-${PPS}pps.pcap \"$POD_IP_3\" \"$POD_IP_1\" \"$POD_HOSTNAME_3\" \"$POD_HOSTNAME_1\" \"$POD_NAME_3\" \"$POD_NAME_1\" $FOLDER_POD_3 $BYTE $PPS" &
-kubectl exec -it $POD_NAME_3 -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh pod3ToPod1-${BYTE}byte-${PPS}pps.cfg \"$POD_IP_3\" \"$POD_IP_1\" \"$POD_HOSTNAME_3\" \"$POD_HOSTNAME_1\" \"$POD_NAME_3\" \"$POD_NAME_1\" $FOLDER_POD_3 $BYTE $PPS"
+kubectl exec -it $POD_NAME_1 -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh pod3ToPod1-${BYTE}byte.pcap \"$POD_IP_3\" \"$POD_IP_1\" \"$POD_HOSTNAME_3\" \"$POD_HOSTNAME_1\" \"$POD_NAME_3\" \"$POD_NAME_1\" $FOLDER_POD_3 $BYTE $PPS $ID_EXP" &
+kubectl exec -it $POD_NAME_3 -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh pod3ToPod1-${BYTE}byte.cfg \"$POD_IP_3\" \"$POD_IP_1\" \"$POD_HOSTNAME_3\" \"$POD_HOSTNAME_1\" \"$POD_NAME_3\" \"$POD_NAME_1\" $FOLDER_POD_3 $BYTE $PPS"
 sleep $INTER_EXPERIMENT_SLEEP
-kubectl exec -it $POD_NAME_2 -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh pod3ToPod2-${BYTE}byte-${PPS}pps.pcap \"$POD_IP_3\" \"$POD_IP_2\" \"$POD_HOSTNAME_3\" \"$POD_HOSTNAME_2\" \"$POD_NAME_3\" \"$POD_NAME_2\" $FOLDER_POD_3 $BYTE $PPS" &
-kubectl exec -it $POD_NAME_3 -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh pod3ToPod2-${BYTE}byte-${PPS}pps.cfg \"$POD_IP_3\" \"$POD_IP_2\" \"$POD_HOSTNAME_3\" \"$POD_HOSTNAME_2\" \"$POD_NAME_3\" \"$POD_NAME_2\" $FOLDER_POD_3 $BYTE $PPS"
+kubectl exec -it $POD_NAME_2 -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh pod3ToPod2-${BYTE}byte.pcap \"$POD_IP_3\" \"$POD_IP_2\" \"$POD_HOSTNAME_3\" \"$POD_HOSTNAME_2\" \"$POD_NAME_3\" \"$POD_NAME_2\" $FOLDER_POD_3 $BYTE $PPS $ID_EXP" &
+kubectl exec -it $POD_NAME_3 -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh pod3ToPod2-${BYTE}byte.cfg \"$POD_IP_3\" \"$POD_IP_2\" \"$POD_HOSTNAME_3\" \"$POD_HOSTNAME_2\" \"$POD_NAME_3\" \"$POD_NAME_2\" $FOLDER_POD_3 $BYTE $PPS"
 sleep $INTER_EXPERIMENT_SLEEP
 
 echo -e "\n..................SINGLE POD TEST..................\n"
@@ -103,15 +104,15 @@ else
     mkdir -p $BASE_FOLDER/$FOLDER_SINGLE_POD && cd $BASE_FOLDER/$FOLDER_SINGLE_POD
 fi
 
-kubectl exec -it $SINGLE_POD_NAME -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh SinglePodToSinglePod-${BYTE}byte-${PPS}pps.pcap \"$SINGLE_POD_IP\" \"$SINGLE_POD_IP\" \"$SINGLE_POD_HOSTNAME\" \"$SINGLE_POD_HOSTNAME\" \"$SINGLE_POD_NAME\" \"$SINGLE_POD_NAME\" $FOLDER_SINGLE_POD $BYTE $PPS" &
-kubectl exec -it $SINGLE_POD_NAME -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh SinglePodToSinglePod-${BYTE}byte-${PPS}pps.cfg \"$SINGLE_POD_IP\" \"$SINGLE_POD_IP\" \"$SINGLE_POD_HOSTNAME\" \"$SINGLE_POD_HOSTNAME\" \"$SINGLE_POD_NAME\" \"$SINGLE_POD_NAME\" $FOLDER_SINGLE_POD $BYTE $PPS"
+kubectl exec -it $SINGLE_POD_NAME -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh SinglePodToSinglePod-${BYTE}byte.pcap \"$SINGLE_POD_IP\" \"$SINGLE_POD_IP\" \"$SINGLE_POD_HOSTNAME\" \"$SINGLE_POD_HOSTNAME\" \"$SINGLE_POD_NAME\" \"$SINGLE_POD_NAME\" $FOLDER_SINGLE_POD $BYTE $PPS $ID_EXP" &
+kubectl exec -it $SINGLE_POD_NAME -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh SinglePodToSinglePod-${BYTE}byte.cfg \"$SINGLE_POD_IP\" \"$SINGLE_POD_IP\" \"$SINGLE_POD_HOSTNAME\" \"$SINGLE_POD_HOSTNAME\" \"$SINGLE_POD_NAME\" \"$SINGLE_POD_NAME\" $FOLDER_SINGLE_POD $BYTE $PPS"
 sleep $INTER_EXPERIMENT_SLEEP
-kubectl exec -it $POD_NAME_1 -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh SinglePodToPod1-${BYTE}byte-${PPS}pps.pcap \"$SINGLE_POD_IP\" \"$POD_IP_1\" \"$SINGLE_POD_HOSTNAME\" \"$POD_HOSTNAME_1\" \"$SINGLE_POD_NAME\" \"$SINGLE_POD_NAME\" $FOLDER_SINGLE_POD $BYTE $PPS" &
-kubectl exec -it $SINGLE_POD_NAME -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh SinglePodToPod1-${BYTE}byte-${PPS}pps.cfg \"$SINGLE_POD_IP\" \"$POD_IP_1\" \"$SINGLE_POD_HOSTNAME\" \"$POD_HOSTNAME_1\" \"$SINGLE_POD_NAME\" \"$SINGLE_POD_NAME\" $FOLDER_SINGLE_POD $BYTE $PPS"
+kubectl exec -it $POD_NAME_1 -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh SinglePodToPod1-${BYTE}byte.pcap \"$SINGLE_POD_IP\" \"$POD_IP_1\" \"$SINGLE_POD_HOSTNAME\" \"$POD_HOSTNAME_1\" \"$SINGLE_POD_NAME\" \"$POD_NAME_1\" $FOLDER_SINGLE_POD $BYTE $PPS $ID_EXP" &
+kubectl exec -it $SINGLE_POD_NAME -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh SinglePodToPod1-${BYTE}byte.cfg \"$SINGLE_POD_IP\" \"$POD_IP_1\" \"$SINGLE_POD_HOSTNAME\" \"$POD_HOSTNAME_1\" \"$SINGLE_POD_NAME\" \"$POD_NAME_1\" $FOLDER_SINGLE_POD $BYTE $PPS"
 sleep $INTER_EXPERIMENT_SLEEP
-kubectl exec -it $POD_NAME_2 -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh SinglePodToPod2-${BYTE}byte-${PPS}pps.pcap \"$SINGLE_POD_IP\" \"$POD_IP_2\" \"$SINGLE_POD_HOSTNAME\" \"$POD_HOSTNAME_2\" \"$SINGLE_POD_NAME\" \"$POD_NAME_2\" $FOLDER_SINGLE_POD $BYTE $PPS" &
-kubectl exec -it $SINGLE_POD_NAME -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh SinglePodToPod2-${BYTE}byte-${PPS}pps.cfg \"$SINGLE_POD_IP\" \"$POD_IP_2\" \"$SINGLE_POD_HOSTNAME\" \"$POD_HOSTNAME_2\" \"$SINGLE_POD_NAME\" \"$POD_NAME_2\" $FOLDER_SINGLE_POD $BYTE $PPS"
+kubectl exec -it $POD_NAME_2 -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh SinglePodToPod2-${BYTE}byte.pcap \"$SINGLE_POD_IP\" \"$POD_IP_2\" \"$SINGLE_POD_HOSTNAME\" \"$POD_HOSTNAME_2\" \"$SINGLE_POD_NAME\" \"$POD_NAME_2\" $FOLDER_SINGLE_POD $BYTE $PPS $ID_EXP" &
+kubectl exec -it $SINGLE_POD_NAME -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh SinglePodToPod2-${BYTE}byte.cfg \"$SINGLE_POD_IP\" \"$POD_IP_2\" \"$SINGLE_POD_HOSTNAME\" \"$POD_HOSTNAME_2\" \"$SINGLE_POD_NAME\" \"$POD_NAME_2\" $FOLDER_SINGLE_POD $BYTE $PPS"
 sleep $INTER_EXPERIMENT_SLEEP
-kubectl exec -it $POD_NAME_3 -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh SinglePodToPod3-${BYTE}byte-${PPS}pps.pcap \"$SINGLE_POD_IP\" \"$POD_IP_3\" \"$SINGLE_POD_HOSTNAME\" \"$POD_HOSTNAME_3\" \"$SINGLE_POD_NAME\" \"$POD_NAME_3\" $FOLDER_SINGLE_POD $BYTE $PPS" &
-kubectl exec -it $SINGLE_POD_NAME -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh SinglePodToPod3-${BYTE}byte-${PPS}pps.cfg \"$SINGLE_POD_IP\" \"$POD_IP_3\" \"$SINGLE_POD_HOSTNAME\" \"$POD_HOSTNAME_3\" \"$SINGLE_POD_NAME\" \"$POD_NAME_3\" $FOLDER_SINGLE_POD $BYTE $PPS"
+kubectl exec -it $POD_NAME_3 -- bash -c "vagrant/ext/kites/scripts/linux/netsniff-test.sh SinglePodToPod3-${BYTE}byte.pcap \"$SINGLE_POD_IP\" \"$POD_IP_3\" \"$SINGLE_POD_HOSTNAME\" \"$POD_HOSTNAME_3\" \"$SINGLE_POD_NAME\" \"$POD_NAME_3\" $FOLDER_SINGLE_POD $BYTE $PPS $ID_EXP" &
+kubectl exec -it $SINGLE_POD_NAME -- bash -c "vagrant/ext/kites/scripts/linux/trafgen-test.sh SinglePodToPod3-${BYTE}byte.cfg \"$SINGLE_POD_IP\" \"$POD_IP_3\" \"$SINGLE_POD_HOSTNAME\" \"$POD_HOSTNAME_3\" \"$SINGLE_POD_NAME\" \"$POD_NAME_3\" $FOLDER_SINGLE_POD $BYTE $PPS"
 sleep $INTER_EXPERIMENT_SLEEP
