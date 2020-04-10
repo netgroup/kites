@@ -44,4 +44,3 @@ echo "{
   const16(0),
   fill('B', $((BYTE-42))),
 }" > ${FILENAME}-${BYTE_FILENAME}byte.cfg
-

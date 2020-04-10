@@ -2,6 +2,7 @@
 # CNI | Tipo di test | ID_EXP | From VM | To VM | From Pod | To Pod | From IP | To IP | Outgoing | Out Unit | Incoming | Inc Unit | Passed | Pas Unit | TX Time | RX Time | TIMESTAMP
 CNI=$1
 iperf_input=$2
+sudo mkdir /vagrant/ext/kites/pod-shared/tests
 cd /vagrant/ext/kites/pod-shared/tests
 
 for (( X=0; X<=297; X+=27))
