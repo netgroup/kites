@@ -6,11 +6,15 @@ IP_ADDR_POD_2=$4
 BYTE=$5
 FILENAME=$6
 FOLDER=$7
+CNI=$8
 BASE_FOLDER=/vagrant/ext/kites/pod-shared
 BYTE_FILENAME=$5
 NEW_MAC_ADDR_POD_1=$(sed -e "s/\"//g" <<< $MAC_ADDR_POD_1) 
-#NEW_MAC_ADDR_POD_2=$(sed -e "s/\"//g" <<< $MAC_ADDR_POD_2) 
-NEW_MAC_ADDR_POD_2="0xee, 0xee, 0xee, 0xee, 0xee, 0xee,"
+if [ $CNI = "calico" ]; then
+   NEW_MAC_ADDR_POD_2="0xee, 0xee, 0xee, 0xee, 0xee, 0xee,"
+else
+   NEW_MAC_ADDR_POD_2=$(sed -e "s/\"//g" <<< $MAC_ADDR_POD_2) 
+fi
 TEMP_IP_ADDR_POD_1=$(sed -e "s/\r//g" <<< $IP_ADDR_POD_1)
 TEMP_IP_ADDR_POD_2=$(sed -e "s/\r//g" <<< $IP_ADDR_POD_2) 
 NEW_IP_ADDR_POD_1=$(sed -e "s/\"//g" <<< $TEMP_IP_ADDR_POD_1) 

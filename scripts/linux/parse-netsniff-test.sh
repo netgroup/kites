@@ -4,7 +4,7 @@ CNI=$1
 netsniff_input=$2
 trafgen_input=$3
 
-cd /vagrant/ext/kites/pod-shared/tests
+cd /vagrant/ext/kites/pod-shared/tests/$CNI
 
 for (( X=0; X<=219; X+=18))
 do
@@ -49,5 +49,5 @@ SEC_TX=$(awk 'NR=='$X+18' { print $2}' < $trafgen_input)
 USEC_TX=$(awk 'NR=='$X+18' { print $4}' < $trafgen_input | sed 's/\(^...\).*/\1/')
 TX_TIME=$SEC_TX.${USEC_TX}s
 #echo $TX_TIME 
-/vagrant/ext/kites/scripts/linux/create-csv-from-trafgen.sh $OUTGOING $TX_TIME
+/vagrant/ext/kites/scripts/linux/create-csv-from-trafgen.sh $CNI $OUTGOING $TX_TIME
 done

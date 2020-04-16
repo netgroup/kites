@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 HOSTNAME=$(hostname)
 /sbin/ip a | grep "eth1" | grep "inet" | awk 'NR==1 { print $2}' > example.txt
 IP_HOSTNAME=$(sed -e 's/.\{3\}$//' example.txt)

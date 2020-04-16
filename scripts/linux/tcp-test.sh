@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 BASE_FOLDER=/vagrant/ext/kites/pod-shared
 cd $BASE_FOLDER
 POD_NAME_1=$(awk 'NR==2 { print $1}' podNameAndIP.txt)
