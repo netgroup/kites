@@ -1,0 +1,36 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: net-test-ds
+  labels:
+    app: net-test-ds
+spec:
+  selector:
+    matchLabels:
+      app: net-test
+  template:
+    metadata:
+      labels:
+        app: net-test
+    spec:
+      containers:
+        - name: net-test-server
+          image: kitesproject/net-test:latest
+          volumeMounts:
+          - name: scripts
+            mountPath: /vagrant/ext/kites/scripts/linux/
+          - name: pod-shared
+            mountPath: /vagrant/ext/kites/pod-shared/
+          securityContext:
+            privileged: true
+          ports:
+            - containerPort: 5201
+          args: ["-s"]
+      volumes:
+      - name: scripts
+        hostPath:
+         path: /vagrant/ext/kites/scripts/linux/
+      - name: pod-shared
+        hostPath:
+         path: /vagrant/ext/kites/pod-shared/

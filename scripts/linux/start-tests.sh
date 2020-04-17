@@ -1,4 +1,5 @@
 #!/bin/bash
+#TODO INSERIRE DIVISIONI PER RENDERE PIU' LEGGIBILE IL LOG 
 vagrant up
 vagrant ssh k8s-master-1.k8s-play.local -- -t '/vagrant/ext/kites/scripts/linux/start.sh weavenet'
 
