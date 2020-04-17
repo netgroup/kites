@@ -27,7 +27,6 @@ rm temp.csv
 /vagrant/ext/kites/scripts/linux/parse-iperf-test.sh $CNI "/vagrant/ext/kites/pod-shared/TCP_IPERF_OUTPUT.txt"
 /vagrant/ext/kites/scripts/linux/parse-iperf-test-node.sh $CNI "/vagrant/ext/kites/pod-shared/TCP_IPERF_NODE_OUTPUT.txt"
 
-#TODO creare folder per test
 if [ -d "/vagrant/ext/kites/tests/" ] 
 then
     echo "Directory /vagrant/ext/kites/tests/ exists." 

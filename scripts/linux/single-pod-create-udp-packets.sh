@@ -10,7 +10,7 @@ CNI=$8
 BASE_FOLDER=/vagrant/ext/kites/pod-shared
 BYTE_FILENAME=$5
 NEW_MAC_ADDR_POD_1=$(sed -e "s/\"//g" <<< $MAC_ADDR_POD_1) 
-if [ $CNI = "calico" ]; then
+if [ "$CNI" == "calico" ]; then
    NEW_MAC_ADDR_POD_2="0xee, 0xee, 0xee, 0xee, 0xee, 0xee,"
 else
    NEW_MAC_ADDR_POD_2=$(sed -e "s/\"//g" <<< $MAC_ADDR_POD_2) 
