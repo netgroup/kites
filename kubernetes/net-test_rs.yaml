@@ -1,22 +1,22 @@
----
 apiVersion: apps/v1
-kind: DaemonSet
+kind: ReplicaSet
 metadata:
-  name: net-test-ds
+  name: net-test-server
   labels:
-    app: net-test-ds
+    app: net-test-server
 spec:
+  replicas: 2
   selector:
     matchLabels:
-      app: net-test
+      app: net-test-server
   template:
     metadata:
       labels:
-        app: net-test
+        app: net-test-server
     spec:
       containers:
-        - name: net-test
-          image: kitesproject/net-test:latest
+        - name: net-test-server
+          image: kitesproject/net-test:latest-dev
           volumeMounts:
           - name: scripts
             mountPath: /vagrant/ext/kites/scripts/linux/

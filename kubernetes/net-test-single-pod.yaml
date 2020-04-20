@@ -8,7 +8,7 @@ metadata:
 spec:
   containers:
   - name: net-test-server
-    image: kitesproject/net-test:latest
+    image: kitesproject/net-test:latest-dev
     volumeMounts:
     - name: scripts
       mountPath: /vagrant/ext/kites/scripts/linux/

@@ -2,10 +2,9 @@
 CNI=$1
 if [ -d "/vagrant/ext/kites/pod-shared/" ] 
 then
-    echo "Directory /vagrant/ext/kites/pod-shared/ exists." 
     cd /vagrant/ext/kites/pod-shared/
 else
-    echo "Error: Directory /vagrant/ext/kites/pod-shared/ doesn't exists."
+    echo "Directory /vagrant/ext/kites/pod-shared/ doesn't exists."
     echo "Creating: Directory /vagrant/ext/kites/pod-shared/"
     mkdir -p /vagrant/ext/kites/pod-shared/ && cd /vagrant/ext/kites/pod-shared/ 
 fi

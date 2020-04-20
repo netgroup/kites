@@ -15,10 +15,22 @@ spec:
         app: net-test
     spec:
       containers:
-        - name: net-test-server
+        - name: net-test
           image: kitesproject/net-test:latest-dev
+          volumeMounts:
+          - name: scripts
+            mountPath: /vagrant/ext/kites/scripts/linux/
+          - name: pod-shared
+            mountPath: /vagrant/ext/kites/pod-shared/
           securityContext:
             privileged: true
           ports:
             - containerPort: 5201
           args: ["-s"]
+      volumes:
+      - name: scripts
+        hostPath:
+         path: /vagrant/ext/kites/scripts/linux/
+      - name: pod-shared
+        hostPath:
+         path: /vagrant/ext/kites/pod-shared/

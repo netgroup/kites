@@ -2,10 +2,9 @@
 CNI=$1
 if [ -d "/vagrant/ext/kites/pod-shared/tests/$CNI" ] 
 then
-    echo "Directory /vagrant/ext/kites/pod-shared/tests/$CNI exists." 
     cd /vagrant/ext/kites/pod-shared/tests/$CNI
 else
-    echo "Error: Directory /vagrant/ext/kites/pod-shared/tests/$CNI doesn't exists."
+    echo "Directory /vagrant/ext/kites/pod-shared/tests/$CNI doesn't exists."
     echo "Creating: Directory /vagrant/ext/kites/pod-shared/tests/$CNI"
 mkdir -p /vagrant/ext/kites/pod-shared/tests/$CNI && cd /vagrant/ext/kites/pod-shared/tests/$CNI
 fi
@@ -29,10 +28,10 @@ rm temp.csv
 
 if [ -d "/vagrant/ext/kites/tests/" ] 
 then
-    echo "Directory /vagrant/ext/kites/tests/ exists." 
+    mv /vagrant/ext/kites/pod-shared/tests/$CNI /vagrant/ext/kites/tests/
 else
-    echo "Error: Directory /vagrant/ext/kites/tests/ doesn't exists."
+    echo "Directory /vagrant/ext/kites/tests/ doesn't exists."
     echo "Creating: Directory /vagrant/ext/kites/tests/"
     mkdir -p /vagrant/ext/kites/tests/
+    mv /vagrant/ext/kites/pod-shared/tests/$CNI /vagrant/ext/kites/tests/
 fi
-mv /vagrant/ext/kites/pod-shared/tests/$CNI /vagrant/ext/kites/tests/

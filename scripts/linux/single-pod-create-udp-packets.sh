@@ -21,10 +21,9 @@ NEW_IP_ADDR_POD_1=$(sed -e "s/\"//g" <<< $TEMP_IP_ADDR_POD_1)
 NEW_IP_ADDR_POD_2=$(sed -e "s/\"//g" <<< $TEMP_IP_ADDR_POD_2)
 if [ -d "${BASE_FOLDER}/${FOLDER}" ] 
 then
-    echo "Directory ${BASE_FOLDER}/${FOLDER} exists." 
     cd ${BASE_FOLDER}/${FOLDER}
 else
-    echo "Error: Directory ${BASE_FOLDER}/${FOLDER} doesn't exists."
+    echo "Directory ${BASE_FOLDER}/${FOLDER} doesn't exists."
     echo "Creating: Directory ${BASE_FOLDER}/${FOLDER}"
     mkdir -p ${BASE_FOLDER}/${FOLDER} && cd ${BASE_FOLDER}/${FOLDER}
 fi

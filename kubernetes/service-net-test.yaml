@@ -4,10 +4,9 @@ metadata:
   name: service-net-test
 spec:
   ports:
-  - port: 5000
+  - port: 5201
     protocol: TCP
     targetPort: 5201
-    nodePort: 30080
   selector:
-    run: net-test
-  type: NodePort
+    app: net-test-server
+  type: ClusterIP
