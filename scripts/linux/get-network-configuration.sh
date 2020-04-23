@@ -26,7 +26,7 @@ ip link show type bridge >> network-configuration.txt
 echo -e "\n---[Bridge Link]---\n" >> network-configuration.txt
 bridge link >> network-configuration.txt
 echo -e "\n---[Bridge Link (show dev cni0)]---\n" >> network-configuration.txt
-bridge link show dev cni0 && \ >> network-configuration.txt
+bridge link show dev cni0 >> network-configuration.txt
 echo -e "\n---[IP Tables]---\n" >> network-configuration.txt
 sudo iptables -vL -t filter >> network-configuration.txt
 sudo iptables -vL -t nat >> network-configuration.txt
