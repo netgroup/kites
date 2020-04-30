@@ -26,7 +26,7 @@ MAC_ADDR_POD_1=$(kubectl exec -it "$POD_1" -- bash -c "vagrant/ext/kites/scripts
 MAC_ADDR_POD_2=$(kubectl exec -it "$POD_2" -- bash -c "vagrant/ext/kites/scripts/linux/get-mac-address-pod.sh")
 MAC_ADDR_POD_3=$(kubectl exec -it "$POD_3" -- bash -c "vagrant/ext/kites/scripts/linux/get-mac-address-pod.sh")
 if [ "$CNI" == "flannel" ]; then
-   echo "Obtaining MAC Addresses of the Nodes for Flannel..."
+   echo "Obtaining MAC Addresses of the Nodes for $CNI..."
    sudo yum install -y sshpass
    MINION_1=$(awk 'NR==2 { print $3}' podNameAndIP.txt)
    MINION_2=$(awk 'NR==3 { print $3}' podNameAndIP.txt)
@@ -66,7 +66,7 @@ if [ "$CNI" == "flannel" ]; then
    /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_3\"" "\"$MAC_ADDR_MINION_3\"" "\"$IP_3\"" "\"$IP_2\"" 1000 pod3ToPod2 pod3 $CNI
    /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_1\"" "\"$MAC_ADDR_MINION_1\"" "\"$IP_1\"" "\"$IP_3\"" 1000 pod1ToPod3 pod3 $CNI
    /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_2\"" "\"$MAC_ADDR_MINION_2\"" "\"$IP_2\"" "\"$IP_3\"" 1000 pod2ToPod3 pod3 $CNI
-   echo "Creating Single POD and UDP Packet for this..."
+   echo "Creating UDP Packets for Single Pod..."
    /vagrant/ext/kites/scripts/linux/single-pod-create-udp-traffic-flannel.sh $CNI
 else
    echo "Creating UDP Packet for DaemonSet..."
