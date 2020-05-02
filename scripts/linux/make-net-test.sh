@@ -13,6 +13,10 @@ ID_EXP=exp-1
 /vagrant/ext/kites/scripts/linux/udp-test.sh 1000 1000 $ID_EXP
 /vagrant/ext/kites/scripts/linux/udp-test.sh 10000 100 $ID_EXP
 /vagrant/ext/kites/scripts/linux/udp-test.sh 10000 1000 $ID_EXP
+/vagrant/ext/kites/scripts/linux/udp-test.sh 20000 100 $ID_EXP
+/vagrant/ext/kites/scripts/linux/udp-test.sh 50000 100 $ID_EXP
+/vagrant/ext/kites/scripts/linux/udp-test.sh 20000 1000 $ID_EXP
+/vagrant/ext/kites/scripts/linux/udp-test.sh 50000 1000 $ID_EXP
 /vagrant/ext/kites/scripts/linux/udp-test.sh 100000 100 $ID_EXP
 /vagrant/ext/kites/scripts/linux/udp-test.sh 100000 1000 $ID_EXP
 
@@ -20,6 +24,10 @@ ID_EXP=exp-1
 /vagrant/ext/kites/scripts/linux/merge-udp-test.sh 1000 1000
 /vagrant/ext/kites/scripts/linux/merge-udp-test.sh 10000 100
 /vagrant/ext/kites/scripts/linux/merge-udp-test.sh 10000 1000
+/vagrant/ext/kites/scripts/linux/merge-udp-test.sh 20000 100 
+/vagrant/ext/kites/scripts/linux/merge-udp-test.sh 50000 100 
+/vagrant/ext/kites/scripts/linux/merge-udp-test.sh 20000 1000
+/vagrant/ext/kites/scripts/linux/merge-udp-test.sh 50000 1000
 /vagrant/ext/kites/scripts/linux/merge-udp-test.sh 100000 100
 /vagrant/ext/kites/scripts/linux/merge-udp-test.sh 100000 1000
 
