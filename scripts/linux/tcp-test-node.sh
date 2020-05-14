@@ -11,7 +11,7 @@ fi
 IP_HOSTNAME=$(sed -e 's/.\{3\}$//' example.txt)
 echo $IP_HOSTNAME
 #Install package if not installed
-sudo yum install -y iperf3 
+sudo apt-get install -y iperf3 
 #Start Iperf3 TCP Test
 BASE_FOLDER=/vagrant/ext/kites/pod-shared
 cd $BASE_FOLDER

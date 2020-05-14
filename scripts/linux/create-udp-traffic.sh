@@ -27,7 +27,7 @@ MAC_ADDR_POD_2=$(kubectl exec -it "$POD_2" -- bash -c "vagrant/ext/kites/scripts
 MAC_ADDR_POD_3=$(kubectl exec -it "$POD_3" -- bash -c "vagrant/ext/kites/scripts/linux/get-mac-address-pod.sh")
 if [ "$CNI" == "flannel" ]; then
    echo "Obtaining MAC Addresses of the Nodes for $CNI..."
-   sudo yum install -y sshpass
+   sudo apt-get install -y sshpass
    MINION_1=$(awk 'NR==2 { print $3}' podNameAndIP.txt)
    MINION_2=$(awk 'NR==3 { print $3}' podNameAndIP.txt)
    MINION_3=$(awk 'NR==4 { print $3}' podNameAndIP.txt)
