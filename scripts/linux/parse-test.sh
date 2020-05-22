@@ -23,6 +23,12 @@ echo "CNI, TEST_TYPE, ID_EXP, VM_SRC, VM_DEST, POD_SRC, POD_DEST, IP_SRC, IP_DES
 /vagrant/ext/kites/scripts/linux/parse-netsniff-test.sh $CNI /vagrant/ext/kites/pod-shared/NETSNIFF-1000byte-50000pps.txt /vagrant/ext/kites/pod-shared/TRAFGEN-1000byte-50000pps.txt
 /vagrant/ext/kites/scripts/linux/parse-netsniff-test.sh $CNI /vagrant/ext/kites/pod-shared/NETSNIFF-100byte-100000pps.txt /vagrant/ext/kites/pod-shared/TRAFGEN-100byte-100000pps.txt
 /vagrant/ext/kites/scripts/linux/parse-netsniff-test.sh $CNI /vagrant/ext/kites/pod-shared/NETSNIFF-1000byte-100000pps.txt /vagrant/ext/kites/pod-shared/TRAFGEN-1000byte-100000pps.txt
+/vagrant/ext/kites/scripts/linux/parse-netsniff-test.sh $CNI /vagrant/ext/kites/pod-shared/NETSNIFF-100byte-120000pps.txt /vagrant/ext/kites/pod-shared/TRAFGEN-100byte-120000pps.txt
+/vagrant/ext/kites/scripts/linux/parse-netsniff-test.sh $CNI /vagrant/ext/kites/pod-shared/NETSNIFF-1000byte-120000pps.txt /vagrant/ext/kites/pod-shared/TRAFGEN-1000byte-120000pps.txt
+/vagrant/ext/kites/scripts/linux/parse-netsniff-test.sh $CNI /vagrant/ext/kites/pod-shared/NETSNIFF-100byte-150000pps.txt /vagrant/ext/kites/pod-shared/TRAFGEN-100byte-150000pps.txt
+/vagrant/ext/kites/scripts/linux/parse-netsniff-test.sh $CNI /vagrant/ext/kites/pod-shared/NETSNIFF-1000byte-150000pps.txt /vagrant/ext/kites/pod-shared/TRAFGEN-1000byte-150000pps.txt
+/vagrant/ext/kites/scripts/linux/parse-netsniff-test.sh $CNI /vagrant/ext/kites/pod-shared/NETSNIFF-100byte-200000pps.txt /vagrant/ext/kites/pod-shared/TRAFGEN-100byte-200000pps.txt
+/vagrant/ext/kites/scripts/linux/parse-netsniff-test.sh $CNI /vagrant/ext/kites/pod-shared/NETSNIFF-1000byte-200000pps.txt /vagrant/ext/kites/pod-shared/TRAFGEN-1000byte-200000pps.txt
 awk -F, '{getline f1 <"trafgen-tests.csv" ;print f1,$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$12,$13,$15,$16}' OFS=, netsniff-tests.csv > temp.csv
 awk -F, -v OFS=, '{ print $3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$1,$13,$14,$2,$15,$16}' temp.csv > netsniff-trafgen-tests.csv
 rm temp.csv
