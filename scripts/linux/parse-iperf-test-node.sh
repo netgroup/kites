@@ -34,11 +34,11 @@ INCOMING=$(awk 'NR=='$X+25' { print $5}' < $iperf_input)
 #echo $INCOMING
 INC_UNIT=$(awk 'NR=='$X+25' { print $6}' < $iperf_input)
 #echo $INC_UNIT 
-PASSED=$(awk 'NR=='$X+14' { print $2}' < $iperf_input)
-#echo $PASSED 
-PAS_UNIT=$(awk 'NR=='$X+14' { print $2}' < $iperf_input)
-#echo $PAS_UNIT 
+THROUGHPUT=$(awk 'NR=='$X+24' { print $7}' < $iperf_input)
+#echo $THROUGHPUT
+THR_UNIT=$(awk 'NR=='$X+24' { print $8}' < $iperf_input)
+#echo $THR_UNIT 
 TEST_TYPE=$(awk 'NR=='$X+27' { print $1}' < $iperf_input)
 #echo $TEST_TYPE
-/vagrant/ext/kites/scripts/linux/create-csv-from-iperf.sh $CNI $TEST_TYPE $ID_EXP $VM_SRC $VM_DEST $POD_SRC $POD_DEST $IP_SRC $IP_DEST $OUTGOING $OUT_UNIT $INCOMING $INC_UNIT $PASSED $PAS_UNIT $TX_TIME $RX_TIME $TIMESTAMP
+/vagrant/ext/kites/scripts/linux/create-csv-from-iperf.sh $CNI $TEST_TYPE $ID_EXP $VM_SRC $VM_DEST $POD_SRC $POD_DEST $IP_SRC $IP_DEST $OUTGOING $OUT_UNIT $INCOMING $INC_UNIT $THROUGHPUT $THR_UNIT $TX_TIME $RX_TIME $TIMESTAMP
 done

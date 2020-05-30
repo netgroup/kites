@@ -2,6 +2,7 @@
 #TODO INSERIRE INTERFACCIA ETH1
 #SE VIRTUALBOX INVECE ENP0S8
 HOSTNAME=$(hostname)
+echo $HOSTNAME
 VAGRANT_PROVIDER=$(awk 'NR==3 { print $2}' /vagrant/env.yaml)
 if [ "$VAGRANT_PROVIDER" == "libvirt" ]; then
    /sbin/ip a | grep "eth1" | grep "inet" | awk 'NR==1 { print $2}' > example.txt

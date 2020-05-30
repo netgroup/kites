@@ -46,8 +46,8 @@ ID_EXP=exp-1
 #TCP TEST FOR PODS AND NODES WITH IPERF3
 echo -e "TCP TEST\n" > TCP_IPERF_OUTPUT.txt
 /vagrant/ext/kites/scripts/linux/tcp-test.sh $ID_EXP
-echo -e "TCP TEST NODES\n" > TCP_IPERF_NODE_OUTPUT.txt
-sudo yum install -y sshpass
-sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@k8s-minion-1.k8s-play.local "/vagrant/ext/kites/scripts/linux/tcp-test-node.sh $ID_EXP"
-sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@k8s-minion-2.k8s-play.local "/vagrant/ext/kites/scripts/linux/tcp-test-node.sh $ID_EXP"
-sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@k8s-minion-3.k8s-play.local "/vagrant/ext/kites/scripts/linux/tcp-test-node.sh $ID_EXP"
+####echo -e "TCP TEST NODES\n" > TCP_IPERF_NODE_OUTPUT.txt
+####sudo yum install -y sshpass
+####sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@k8s-minion-1.k8s-play.local "/vagrant/ext/kites/scripts/linux/tcp-test-node.sh $ID_EXP"
+####sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@k8s-minion-2.k8s-play.local "/vagrant/ext/kites/scripts/linux/tcp-test-node.sh $ID_EXP"
+####sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@k8s-minion-3.k8s-play.local "/vagrant/ext/kites/scripts/linux/tcp-test-node.sh $ID_EXP"

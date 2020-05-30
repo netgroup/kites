@@ -1,5 +1,5 @@
 #!/bin/bash
-BASE_FOLDER=//vagrant/ext/kites/pod-shared
+BASE_FOLDER=/vagrant/ext/kites/pod-shared
 cd $BASE_FOLDER
 POD_NAME_1=$(awk 'NR==2 { print $1}' podNameAndIP.txt)
 POD_NAME_2=$(awk 'NR==3 { print $1}' podNameAndIP.txt)
@@ -17,7 +17,7 @@ FOLDER_POD_1=pod1
 FOLDER_POD_2=pod2
 FOLDER_POD_3=pod3
 FOLDER_SINGLE_POD=single-pod
-INTER_EXPERIMENT_SLEEP=5
+INTER_EXPERIMENT_SLEEP=3
 PPS=$1
 BYTE=$2
 ID_EXP=$3

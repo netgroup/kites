@@ -28,6 +28,8 @@ TEST_TYPE=$(awk 'NR=='$X+9' { print $1}' < $netsniff_input)
 #echo $TEST_TYPE
 PPS=$(awk 'NR=='$X+9' { print $4}' < $netsniff_input)
 #echo $PPS 
+BYTE=$(awk 'NR=='$X+9' { print $7}' < $netsniff_input)
+#echo $PPS 
 INCOMING=$(awk 'NR=='$X+13' { print $2}' < $netsniff_input)
 #echo $INCOMING 
 PASSED=$(awk 'NR=='$X+14' { print $2}' < $netsniff_input)
@@ -36,9 +38,9 @@ PASSED=$(awk 'NR=='$X+14' { print $2}' < $netsniff_input)
 #echo $PASSED 
 SEC_RX=$(awk 'NR=='$X+17' { print $2}' < $netsniff_input)
 USEC_RX=$(awk 'NR=='$X+17' { print $4}' < $netsniff_input | sed 's/\(^...\).*/\1/')
-RX_TIME=$SEC_RX.${USEC_RX}s
+RX_TIME=$SEC_RX.${USEC_RX}
 #echo $RX_TIME 
-/vagrant/ext/kites/scripts/linux/create-csv-from-netsniff.sh $CNI $TEST_TYPE $ID_EXP $PPS $VM_SRC $VM_DEST $POD_SRC $POD_DEST $IP_SRC $IP_DEST $INCOMING $PASSED $RX_TIME $TIMESTAMP
+/vagrant/ext/kites/scripts/linux/create-csv-from-netsniff.sh $CNI $TEST_TYPE $ID_EXP $PPS $VM_SRC $VM_DEST $POD_SRC $POD_DEST $IP_SRC $IP_DEST $INCOMING $PASSED $RX_TIME $TIMESTAMP $BYTE
 done
 
 for (( X=0; X<=228; X+=19))
@@ -47,7 +49,7 @@ OUTGOING=$(awk 'NR=='$X+16' { print $2}' < $trafgen_input)
 #echo $OUTGOING
 SEC_TX=$(awk 'NR=='$X+18' { print $2}' < $trafgen_input)
 USEC_TX=$(awk 'NR=='$X+18' { print $4}' < $trafgen_input | sed 's/\(^...\).*/\1/')
-TX_TIME=$SEC_TX.${USEC_TX}s
+TX_TIME=$SEC_TX.${USEC_TX}
 #echo $TX_TIME 
 /vagrant/ext/kites/scripts/linux/create-csv-from-trafgen.sh $CNI $OUTGOING $TX_TIME
 done

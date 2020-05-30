@@ -14,5 +14,6 @@ INCOMING=${11}
 PASSED=${12}
 RX_TIME=${13}
 TIMESTAMP=${14}
+BYTE=${15}
 cd /vagrant/ext/kites/pod-shared/tests/$CNI
-echo "$CNI, $TEST_TYPE, $ID_EXP, $PPS, $VM_SRC, $VM_DEST, $POD_SRC, $POD_DEST, $IP_SRC, $IP_DEST, ,$INCOMING, $PASSED, ,$RX_TIME, $TIMESTAMP" >> netsniff-tests.csv
+echo "$CNI, $TEST_TYPE, $ID_EXP, $BYTE, $PPS, $VM_SRC, $VM_DEST, $POD_SRC, $POD_DEST, $IP_SRC, $IP_DEST, ,$INCOMING, $PASSED, ,$RX_TIME, $TIMESTAMP" >> netsniff-tests.csv

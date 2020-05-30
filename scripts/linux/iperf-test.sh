@@ -1,5 +1,5 @@
 #!/bin/bash
-# CNI | Tipo di test | From VM | To VM | From Pod | To Pod | From IP | To IP | Outgoing | Out Unit | Incoming | Inc Unit | Passed | Pass Unit | TX Time | RX Time
+# CNI | Tipo di test | From VM | To VM | From Pod | To Pod | From IP | To IP | Outgoing | Out Unit | Incoming | Inc Unit | Throughput | Thr Unit | TX Time | RX Time
 IP_SRC=$1
 IP_DEST=$2
 POD_HOSTNAME_1=$3
