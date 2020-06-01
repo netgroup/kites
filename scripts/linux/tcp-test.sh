@@ -22,7 +22,7 @@ kubectl exec -it $POD_NAME_1 -- bash -c "vagrant/ext/kites/scripts/linux/iperf-t
 kubectl exec -it $POD_NAME_1 -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"$POD_IP_1\" \"$SINGLE_POD_IP\" \"$POD_HOSTNAME_1\" \"$SINGLE_POD_HOSTNAME\" \"$POD_NAME_1\" \"$SINGLE_POD_NAME\" $ID_EXP"
 echo -e "\nPOD 2 to other PODS...\n"
 echo -e "----------------------------------------------\n\n"
-kubectl exec -it $POD_NAME_2 -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"$POD_IP_2\" \"$POD_IP_1\" \"$POD_HOSTNAME_2\" \"$POD_HOSTNAME_1\" \"$POD_NAME_1\" \"$POD_NAME_1\" $ID_EXP"
+kubectl exec -it $POD_NAME_2 -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"$POD_IP_2\" \"$POD_IP_1\" \"$POD_HOSTNAME_2\" \"$POD_HOSTNAME_1\" \"$POD_NAME_2\" \"$POD_NAME_1\" $ID_EXP"
 kubectl exec -it $POD_NAME_2 -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"$POD_IP_2\" \"$POD_IP_2\" \"$POD_HOSTNAME_2\" \"$POD_HOSTNAME_2\" \"$POD_NAME_2\" \"$POD_NAME_2\" $ID_EXP"
 kubectl exec -it $POD_NAME_2 -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"$POD_IP_2\" \"$POD_IP_3\" \"$POD_HOSTNAME_2\" \"$POD_HOSTNAME_3\" \"$POD_NAME_2\" \"$POD_NAME_3\" $ID_EXP"
 kubectl exec -it $POD_NAME_2 -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"$POD_IP_2\" \"$SINGLE_POD_IP\" \"$POD_HOSTNAME_2\" \"$SINGLE_POD_HOSTNAME\" \"$POD_NAME_2\" \"$SINGLE_POD_NAME\" $ID_EXP"
