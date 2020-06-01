@@ -34,8 +34,6 @@ INCOMING=$(awk 'NR=='$X+13' { print $2}' < $netsniff_input)
 #echo $INCOMING 
 PASSED=$(awk 'NR=='$X+14' { print $2}' < $netsniff_input)
 #echo $PASSED 
-PASSED=$(awk 'NR=='$X+14' { print $2}' < $netsniff_input)
-#echo $PASSED 
 SEC_RX=$(awk 'NR=='$X+17' { print $2}' < $netsniff_input)
 USEC_RX=$(awk 'NR=='$X+17' { print $4}' < $netsniff_input | sed 's/\(^...\).*/\1/')
 RX_TIME=$SEC_RX.${USEC_RX}
