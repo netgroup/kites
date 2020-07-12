@@ -9,7 +9,9 @@ else
     mkdir -p /vagrant/ext/kites/cpu/ && cd /vagrant/ext/kites/cpu/
 fi
 echo "DATE, CPU-${HOSTNAME}" > cpu-$HOSTNAME.txt
-while true
+RUNTIME="5 second"
+ENDTIME=$(date -ud "$RUNTIME" +%s)
+while [[ $(date -u +%s) -le $ENDTIME ]]
 do 
 	DATE=$(date "+%Y-%m-%d %H:%M:%S")
 	CPU_USAGE=$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1"%"}')
