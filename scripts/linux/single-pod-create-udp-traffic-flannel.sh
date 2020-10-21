@@ -2,8 +2,8 @@
 ## Get Hostname, MAC Address and IP for single POD
 CNI=$1
 POD=$(kubectl get pod -l app=net-test-single-pod -o jsonpath="{.items[0].metadata.name}")
-MAC_ADDR_SINGLE_POD=$(kubectl exec -it $POD -- bash -c "vagrant/ext/kites/scripts/linux/single-pod-get-mac-address.sh")
-IP_PARSED_SINGLE_POD=$(kubectl exec -it $POD -- bash -c "vagrant/ext/kites/scripts/linux/single-pod-get-ip.sh")
+MAC_ADDR_SINGLE_POD=$(kubectl exec -i $POD -- bash -c "vagrant/ext/kites/scripts/linux/single-pod-get-mac-address.sh")
+IP_PARSED_SINGLE_POD=$(kubectl exec -i $POD -- bash -c "vagrant/ext/kites/scripts/linux/single-pod-get-ip.sh")
 echo "Creating UDP Packets for single POD" 
 
 MINION_1=$(awk 'NR==2 { print $3}' podNameAndIP.txt)

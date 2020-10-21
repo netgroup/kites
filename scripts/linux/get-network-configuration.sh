@@ -88,8 +88,8 @@ sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@k8s-minion-3.k8s-pl
 																						  sudo iptables -vL -t security \
 																						  " >>network-configuration.txt
 echo -e "\n ###------------>>> POD 1 <<<------------###\n" >>network-configuration.txt
-kubectl exec -it "$POD_NAME_1" -- bash -c "printf '\n---[IP Addresses]--- \n' && ip a && printf '\n---[IP Routes]--- \n' && ip r" >>network-configuration.txt
+kubectl exec -i "$POD_NAME_1" -- bash -c "printf '\n---[IP Addresses]--- \n' && ip a && printf '\n---[IP Routes]--- \n' && ip r" >>network-configuration.txt
 echo -e "\n ###------------>>> POD 2 <<<------------###\n" >>network-configuration.txt
-kubectl exec -it "$POD_NAME_2" -- bash -c "printf '\n---[IP Addresses]--- \n' && ip a && printf '\n---[IP Routes]--- \n' && ip r" >>network-configuration.txt
+kubectl exec -i "$POD_NAME_2" -- bash -c "printf '\n---[IP Addresses]--- \n' && ip a && printf '\n---[IP Routes]--- \n' && ip r" >>network-configuration.txt
 echo -e "\n ###------------>>> POD 3 <<<------------###\n" >>network-configuration.txt
-kubectl exec -it "$POD_NAME_3" -- bash -c "printf '\n---[IP Addresses]--- \n' && ip a && printf '\n---[IP Routes]--- \n' && ip r" >>network-configuration.txt
+kubectl exec -i "$POD_NAME_3" -- bash -c "printf '\n---[IP Addresses]--- \n' && ip a && printf '\n---[IP Routes]--- \n' && ip r" >>network-configuration.txt

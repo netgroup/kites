@@ -21,9 +21,9 @@ IP_3=$(sed -e "s/\./, /g" <<<$POD_IP_3)
 #echo "POD 1 NAME = ${POD_1} IP = ${POD_IP_1}" &&  echo "POD 2 NAME = ${POD_2} IP = ${POD_IP_2}" && echo "POD 3 NAME = ${POD_3} IP = ${POD_IP_3}"
 #echo ${IP_1} && echo ${IP_2} && echo ${IP_3}
 echo "Obtaining MAC Addresses of the DaemonSet..."
-MAC_ADDR_POD_1=$(kubectl exec -it "$POD_1" -- bash -c "vagrant/ext/kites/scripts/linux/get-mac-address-pod.sh")
-MAC_ADDR_POD_2=$(kubectl exec -it "$POD_2" -- bash -c "vagrant/ext/kites/scripts/linux/get-mac-address-pod.sh")
-MAC_ADDR_POD_3=$(kubectl exec -it "$POD_3" -- bash -c "vagrant/ext/kites/scripts/linux/get-mac-address-pod.sh")
+MAC_ADDR_POD_1=$(kubectl exec -i "$POD_1" -- bash -c "vagrant/ext/kites/scripts/linux/get-mac-address-pod.sh")
+MAC_ADDR_POD_2=$(kubectl exec -i "$POD_2" -- bash -c "vagrant/ext/kites/scripts/linux/get-mac-address-pod.sh")
+MAC_ADDR_POD_3=$(kubectl exec -i "$POD_3" -- bash -c "vagrant/ext/kites/scripts/linux/get-mac-address-pod.sh")
 if [ "$CNI" == "flannel" ]; then
     echo "Obtaining MAC Addresses of the Nodes for $CNI..."
     sudo apt install -y sshpass
