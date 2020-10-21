@@ -15,7 +15,7 @@ cd /vagrant/ext/kites/pod-shared
 POD_NAME_1=$(awk 'NR==2 { print $1}' podNameAndIP.txt)
 POD_NAME_2=$(awk 'NR==3 { print $1}' podNameAndIP.txt)
 POD_NAME_3=$(awk 'NR==4 { print $1}' podNameAndIP.txt)
-sudo yum install -y sshpass
+sudo apt install -y sshpass
 echo -e "###------------>>> MASTER <<<------------###" > network-configuration.txt
 echo -e "\n---[IP Addresses]---\n" >> network-configuration.txt
 ip a >> network-configuration.txt

@@ -2,17 +2,17 @@
 #TODO INSERIRE INTERFACCIA ETH1
 #SE VIRTUALBOX INVECE ENP0S8
 HOSTNAME=$(hostname)
-echo $HOSTNAME
+echo "$HOSTNAME"
 VAGRANT_PROVIDER=$(awk 'NR==3 { print $2}' /vagrant/env.yaml)
 if [ "$VAGRANT_PROVIDER" == "libvirt" ]; then
-   /sbin/ip a | grep "eth1" | grep "inet" | awk 'NR==1 { print $2}' > example.txt
+   /sbin/ip a | grep "eth1" | grep "inet" | awk 'NR==1 { print $2}' >example.txt
 else
-   /sbin/ip a | grep "enp0s8" | grep "inet" | awk 'NR==1 { print $2}' > example.txt
+   /sbin/ip a | grep "enp0s8" | grep "inet" | awk 'NR==1 { print $2}' >example.txt
 fi
 IP_HOSTNAME=$(sed -e 's/.\{3\}$//' example.txt)
-echo $IP_HOSTNAME
+echo "$IP_HOSTNAME"
 #Install package if not installed
-sudo yum install -y iperf3 
+sudo apt install -y iperf3
 #Start Iperf3 TCP Test
 BASE_FOLDER=/vagrant/ext/kites/pod-shared
 cd $BASE_FOLDER
