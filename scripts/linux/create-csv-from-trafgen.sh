@@ -3,5 +3,8 @@
 CNI=$1
 OUTGOING=$2
 TX_TIME=$3
-cd /vagrant/ext/kites/pod-shared/tests/$CNI
-echo "$OUTGOING, $TX_TIME" >> trafgen-tests.csv
+cd /vagrant/ext/kites/pod-shared/tests/"$CNI" || {
+    echo "No such directory"
+    exit 1
+}
+echo "$OUTGOING, $TX_TIME" >>trafgen-tests.csv
