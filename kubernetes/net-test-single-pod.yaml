@@ -7,22 +7,22 @@ metadata:
     app: net-test-single-pod
 spec:
   containers:
-  - name: net-test-server
-    image: kitesproject/net-test:latest-dev
-    volumeMounts:
-    - name: scripts
-      mountPath: /vagrant/ext/kites/scripts/linux/
-    - name: pod-shared
-      mountPath: /vagrant/ext/kites/pod-shared/
-    securityContext:
-      privileged: true
-    ports:
-      - containerPort: 5201
-    args: ["-s"]
+    - name: net-test-server
+      image: kitesproject/net-test:latest-dev
+      volumeMounts:
+        - name: scripts
+          mountPath: /vagrant/ext/kites/scripts/linux/
+        - name: pod-shared
+          mountPath: /vagrant/ext/kites/pod-shared/
+      securityContext:
+        privileged: true
+      ports:
+        - containerPort: 5201
+      args: ["-s"]
   volumes:
-  - name: scripts
-    hostPath:
-     path: /vagrant/ext/kites/scripts/linux/
-  - name: pod-shared
-    hostPath:
-     path: /vagrant/ext/kites/pod-shared/
+    - name: scripts
+      hostPath:
+        path: /vagrant/ext/kites/scripts/linux/
+    - name: pod-shared
+      hostPath:
+        path: /vagrant/ext/kites/pod-shared/

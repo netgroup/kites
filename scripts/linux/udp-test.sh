@@ -33,6 +33,7 @@ kubectl exec -i $SINGLE_POD_NAME -- bash -c "/vagrant/ext/kites/scripts/linux/cp
 
 cd $BASE_FOLDER/$FOLDER_POD_1
 
+
 echo -e "\n..................POD 1 TEST..................\n"
 echo -e "----------------------------------------------\n\n"
 
@@ -40,12 +41,12 @@ kubectl exec -i $POD_NAME_1 -- bash -c "/vagrant/ext/kites/scripts/linux/netsnif
 sleep 2 &&
     kubectl exec -i $POD_NAME_1 -- bash -c "/vagrant/ext/kites/scripts/linux/trafgen-test.sh samePod1-${BYTE}byte.cfg \"$POD_IP_1\" \"$POD_IP_1\" \"$POD_HOSTNAME_1\" \"$POD_HOSTNAME_1\" \"$POD_NAME_1\" \"$POD_NAME_1\" $FOLDER_POD_1 $BYTE $PPS"
 sleep $INTER_EXPERIMENT_SLEEP
-echo -e "----------------INTER_EXPERIMENT------------------\n\n"
+
 kubectl exec -i $POD_NAME_1 -- bash -c "/vagrant/ext/kites/scripts/linux/netsniff-test.sh pod2ToPod1-${BYTE}byte.pcap \"$POD_IP_2\" \"$POD_IP_1\" \"$POD_HOSTNAME_2\" \"$POD_HOSTNAME_1\" \"$POD_NAME_2\" \"$POD_NAME_1\" $FOLDER_POD_1 $BYTE $PPS $ID_EXP" &
 sleep 2 &&
     kubectl exec -i $POD_NAME_2 -- bash -c "/vagrant/ext/kites/scripts/linux/trafgen-test.sh pod2ToPod1-${BYTE}byte.cfg \"$POD_IP_2\" \"$POD_IP_1\" \"$POD_HOSTNAME_2\" \"$POD_HOSTNAME_1\" \"$POD_NAME_2\" \"$POD_NAME_1\" $FOLDER_POD_2 $BYTE $PPS"
 sleep $INTER_EXPERIMENT_SLEEP
-echo -e "----------------INTER_EXPERIMENT------------------\n\n"
+
 kubectl exec -i $POD_NAME_1 -- bash -c "/vagrant/ext/kites/scripts/linux/netsniff-test.sh pod3ToPod1-${BYTE}byte.pcap \"$POD_IP_3\" \"$POD_IP_1\" \"$POD_HOSTNAME_3\" \"$POD_HOSTNAME_1\" \"$POD_NAME_3\" \"$POD_NAME_1\" $FOLDER_POD_1 $BYTE $PPS $ID_EXP" &
 sleep 2 &&
     kubectl exec -i $POD_NAME_3 -- bash -c "/vagrant/ext/kites/scripts/linux/trafgen-test.sh pod3ToPod1-${BYTE}byte.cfg \"$POD_IP_3\" \"$POD_IP_1\" \"$POD_HOSTNAME_3\" \"$POD_HOSTNAME_1\" \"$POD_NAME_3\" \"$POD_NAME_1\" $FOLDER_POD_3 $BYTE $PPS"
