@@ -7,7 +7,7 @@ cd /vagrant/ext/kites/pod-shared/tests/$CNI
 for (( X=0; X<=297; X+=27))
 do
 VM_SRC=$(awk 'NR=='$X+3' { print $3}' < $iperf_input)
-#echo $VM_SRC
+echo $VM_SRC
 VM_DEST=$(awk 'NR=='$X+3' { print $6}' < $iperf_input)
 #echo $VM_DEST 
 POD_SRC=$(awk 'NR=='$X+5' { print $3}' < $iperf_input)

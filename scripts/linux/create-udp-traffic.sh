@@ -1,5 +1,9 @@
 #!/bin/bash
 CNI=$1
+N=$2
+
+echo "$(kubectl get pods -o wide)"
+
 if [ -d "/vagrant/ext/kites/pod-shared/" ] 
 then
     cd /vagrant/ext/kites/pod-shared/
@@ -8,99 +12,118 @@ else
     echo "Creating: Directory /vagrant/ext/kites/pod-shared/"
     mkdir -p /vagrant/ext/kites/pod-shared/ && cd /vagrant/ext/kites/pod-shared/ 
 fi
+
+
 echo "Obtaining the names of the DaemonSet..."
-POD_1=$(awk 'NR==2 { print $1}' podNameAndIP.txt)
-POD_2=$(awk 'NR==3 { print $1}' podNameAndIP.txt)
-POD_3=$(awk 'NR==4 { print $1}' podNameAndIP.txt)
+for (( minion_n=1; minion_n<=$N; minion_n++ ))
+do
+   declare n_plus=$((minion_n + 1))
+   nome_pod=$(awk 'NR=='$n_plus' { print $1}' podNameAndIP.txt)
+   declare -x "POD_$minion_n"=$nome_pod
+done
+
 echo "Obtaining the IPs of the DaemonSet..."
-POD_IP_1=$(awk 'NR==2 { print $2}' podNameAndIP.txt)
-POD_IP_2=$(awk 'NR==3 { print $2}' podNameAndIP.txt)
-POD_IP_3=$(awk 'NR==4 { print $2}' podNameAndIP.txt)
-IP_1=$(sed -e "s/\./, /g" <<< $POD_IP_1)
-IP_2=$(sed -e "s/\./, /g" <<< $POD_IP_2)
-IP_3=$(sed -e "s/\./, /g" <<< $POD_IP_3)
-#echo "POD 1 NAME = ${POD_1} IP = ${POD_IP_1}" &&  echo "POD 2 NAME = ${POD_2} IP = ${POD_IP_2}" && echo "POD 3 NAME = ${POD_3} IP = ${POD_IP_3}"
-#echo ${IP_1} && echo ${IP_2} && echo ${IP_3}
+for (( minion_n=1; minion_n<=$N; minion_n++ ))
+do
+   declare n_plus=$((minion_n + 1))
+   ip_pod=$(awk 'NR=='$n_plus' { print $2}' podNameAndIP.txt)
+   declare -x "POD_IP_$minion_n= $ip_pod"
+
+   declare ip_name=POD_IP_$minion_n
+   ip_parsed_pods=$(sed -e "s/\./, /g" <<< ${!ip_name})
+   declare -x "IP_$minion_n= $ip_parsed_pods"
+done
+
+#controllo
+for (( minion_n=1; minion_n<=$N; minion_n++ ))
+do
+   declare name_pod="POD_$minion_n"
+   declare ip_pod="POD_IP_$minion_n"
+   declare ip_parsed_pods="IP_$minion_n"
+   echo "POD $minion_n NAME = ${!name_pod} IP = ${!ip_pod} ip parsed = ${!ip_parsed_pods}"
+done
+
 echo "Obtaining MAC Addresses of the DaemonSet..."
-MAC_ADDR_POD_1=$(kubectl exec -i "$POD_1" -- bash -c "vagrant/ext/kites/scripts/linux/get-mac-address-pod.sh")
-MAC_ADDR_POD_2=$(kubectl exec -i "$POD_2" -- bash -c "vagrant/ext/kites/scripts/linux/get-mac-address-pod.sh")
-MAC_ADDR_POD_3=$(kubectl exec -i "$POD_3" -- bash -c "vagrant/ext/kites/scripts/linux/get-mac-address-pod.sh")
+for (( minion_n=1; minion_n<=$N; minion_n++ ))
+do
+   declare pod_names=POD_$minion_n 
+   echo "get pod:"
+   echo "$(kubectl get pods -o wide | grep ${!pod_names})"
+   mac_pod=$(kubectl exec -i "${!pod_names}" -- bash -c "vagrant/ext/kites/scripts/linux/get-mac-address-pod.sh")
+   declare "MAC_ADDR_POD_$minion_n=$mac_pod"
+done
+
 if [ "$CNI" == "flannel" ]; then
    echo "Obtaining MAC Addresses of the Nodes for $CNI..."
    sudo apt install -y sshpass
-   MINION_1=$(awk 'NR==2 { print $3}' podNameAndIP.txt)
-   MINION_2=$(awk 'NR==3 { print $3}' podNameAndIP.txt)
-   MINION_3=$(awk 'NR==4 { print $3}' podNameAndIP.txt)
-   MAC_ADDR_MINION_1=$(sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@$MINION_1 "/vagrant/ext/kites/scripts/linux/get-mac-address-cni-node.sh")
-   MAC_ADDR_MINION_2=$(sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@$MINION_2 "/vagrant/ext/kites/scripts/linux/get-mac-address-cni-node.sh")
-   MAC_ADDR_MINION_3=$(sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@$MINION_3 "/vagrant/ext/kites/scripts/linux/get-mac-address-cni-node.sh")
+   for (( minion_n=1; minion_n<=$N; minion_n++ ))
+   do
+      declare n_plus=$((minion_n + 1))
+      min_name=$(awk 'NR=='$n_plus' { print $3}' podNameAndIP.txt)
+      declare -x "MINION_$minion_n"= $min_name
+      declare minion="MINION_$minion_n"
+      min_mac=$(sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@${!minion} "/vagrant/ext/kites/scripts/linux/get-mac-address-cni-node.sh")
+      declare -x "MAC_ADDR_MINION_$minion_n"= $min_mac
+   done
    echo "Creating UDP Packet for DaemonSet..."
-   export IP_1 IP_2 IP_3 MAC_ADDR_POD_1 MAC_ADDR_POD_2 MAC_ADDR_POD_3 MAC_ADDR_MINION_1 MAC_ADDR_MINION_2 MAC_ADDR_MINION_3
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_1\"" "\"$MAC_ADDR_POD_1\"" "\"$IP_1\"" "\"$IP_1\"" 100 samePod1 pod1 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_1\"" "\"$MAC_ADDR_MINION_1\"" "\"$IP_1\"" "\"$IP_2\"" 100 pod1ToPod2 pod1 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_1\"" "\"$MAC_ADDR_MINION_1\"" "\"$IP_1\"" "\"$IP_3\"" 100 pod1ToPod3 pod1 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_2\"" "\"$MAC_ADDR_MINION_2\"" "\"$IP_2\"" "\"$IP_1\"" 100 pod2ToPod1 pod1 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_3\"" "\"$MAC_ADDR_MINION_3\"" "\"$IP_3\"" "\"$IP_1\"" 100 pod3ToPod1 pod1 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_2\"" "\"$MAC_ADDR_POD_2\"" "\"$IP_2\"" "\"$IP_2\"" 100 samePod2 pod2 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_2\"" "\"$MAC_ADDR_MINION_2\"" "\"$IP_2\"" "\"$IP_1\"" 100 pod2ToPod1 pod2 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_2\"" "\"$MAC_ADDR_MINION_2\"" "\"$IP_2\"" "\"$IP_3\"" 100 pod2ToPod3 pod2 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_3\"" "\"$MAC_ADDR_MINION_3\"" "\"$IP_3\"" "\"$IP_1\"" 100 pod3ToPod2 pod2 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_1\"" "\"$MAC_ADDR_MINION_1\"" "\"$IP_1\"" "\"$IP_2\"" 100 pod1ToPod2 pod2 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_3\"" "\"$MAC_ADDR_POD_3\"" "\"$IP_3\"" "\"$IP_3\"" 100 samePod3 pod3 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_3\"" "\"$MAC_ADDR_MINION_3\"" "\"$IP_3\"" "\"$IP_1\"" 100 pod3ToPod1 pod3 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_3\"" "\"$MAC_ADDR_MINION_3\"" "\"$IP_3\"" "\"$IP_2\"" 100 pod3ToPod2 pod3 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_1\"" "\"$MAC_ADDR_MINION_1\"" "\"$IP_1\"" "\"$IP_3\"" 100 pod1ToPod3 pod3 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_2\"" "\"$MAC_ADDR_MINION_2\"" "\"$IP_2\"" "\"$IP_3\"" 100 pod2ToPod3 pod3 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_1\"" "\"$MAC_ADDR_POD_1\"" "\"$IP_1\"" "\"$IP_1\"" 1000 samePod1 pod1 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_1\"" "\"$MAC_ADDR_MINION_1\"" "\"$IP_1\"" "\"$IP_2\"" 1000 pod1ToPod2 pod1 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_1\"" "\"$MAC_ADDR_MINION_1\"" "\"$IP_1\"" "\"$IP_3\"" 1000 pod1ToPod3 pod1 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_2\"" "\"$MAC_ADDR_MINION_2\"" "\"$IP_2\"" "\"$IP_1\"" 1000 pod2ToPod1 pod1 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_3\"" "\"$MAC_ADDR_MINION_3\"" "\"$IP_3\"" "\"$IP_1\"" 1000 pod3ToPod1 pod1 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_2\"" "\"$MAC_ADDR_POD_2\"" "\"$IP_2\"" "\"$IP_2\"" 1000 samePod2 pod2 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_2\"" "\"$MAC_ADDR_MINION_2\"" "\"$IP_2\"" "\"$IP_1\"" 1000 pod2ToPod1 pod2 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_2\"" "\"$MAC_ADDR_MINION_2\"" "\"$IP_2\"" "\"$IP_3\"" 1000 pod2ToPod3 pod2 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_3\"" "\"$MAC_ADDR_MINION_3\"" "\"$IP_3\"" "\"$IP_1\"" 1000 pod3ToPod2 pod2 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_1\"" "\"$MAC_ADDR_MINION_1\"" "\"$IP_1\"" "\"$IP_2\"" 1000 pod1ToPod2 pod2 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_3\"" "\"$MAC_ADDR_POD_3\"" "\"$IP_3\"" "\"$IP_3\"" 1000 samePod3 pod3 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_3\"" "\"$MAC_ADDR_MINION_3\"" "\"$IP_3\"" "\"$IP_1\"" 1000 pod3ToPod1 pod3 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_3\"" "\"$MAC_ADDR_MINION_3\"" "\"$IP_3\"" "\"$IP_2\"" 1000 pod3ToPod2 pod3 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_1\"" "\"$MAC_ADDR_MINION_1\"" "\"$IP_1\"" "\"$IP_3\"" 1000 pod1ToPod3 pod3 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_2\"" "\"$MAC_ADDR_MINION_2\"" "\"$IP_2\"" "\"$IP_3\"" 1000 pod2ToPod3 pod3 $CNI
+   for (( minion_n=1; minion_n<=$N; minion_n++ ))
+   do
+      export IP_$minion_n MAC_ADDR_POD_$minion_n MAC_ADDR_POD_$minion_n
+   done
+   bytes=(100 1000)
+   for byte in "${bytes[@]}"
+   do
+      echo "$byte bytes"
+      for (( i=1; i<=$N; i++ ))
+      do
+         for (( j=1; j<=$N; j++ ))
+         do
+            declare ip1_name="IP_$i"
+            declare ip2_name="IP_$j"
+            declare mac1_pod="MAC_ADDR_POD_$i"
+            declare mac2_pod="MAC_ADDR_POD_$j"
+            declare mac1_minion="MAC_ADDR_MINON_$i"
+            declare mac2_minion="MAC_ADDR_MINON_$j"
+            if [ "$i" -eq "$j" ]; then
+               echo "sono nell'if con $i=$j"
+               /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"${!mac1_pod}\"" "\"${!mac1_pod}\"" "\"${!ip1_name}\"" "\"${!ip2_name}\"" $byte samePod$i pod$i $CNI
+            else
+               echo "sono nell'else"
+               /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"${!mac1_pod}\"" "\"${!mac1_minion}\"" "\"${!ip1_name}\"" "\"${!ip2_name}\"" $byte pod${i}ToPod${j} pod$i $CNI
+               /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"${!mac2_pod}\"" "\"${!mac2_minion}\"" "\"${!ip2_name}\"" "\"${!ip1_name}\"" $byte pod${j}ToPod${i} pod$i $CNI
+            fi
+         done
+      done
+   done
    echo "Creating UDP Packets for Single Pod..."
    /vagrant/ext/kites/scripts/linux/single-pod-create-udp-traffic-flannel.sh $CNI
 else
    echo "Creating UDP Packet for DaemonSet..."
-   export IP_1 IP_2 IP_3 MAC_ADDR_POD_1 MAC_ADDR_POD_2 MAC_ADDR_POD_3
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_1\"" "\"$MAC_ADDR_POD_1\"" "\"$IP_1\"" "\"$IP_1\"" 100 samePod1 pod1 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_1\"" "\"$MAC_ADDR_POD_2\"" "\"$IP_1\"" "\"$IP_2\"" 100 pod1ToPod2 pod1 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_1\"" "\"$MAC_ADDR_POD_3\"" "\"$IP_1\"" "\"$IP_3\"" 100 pod1ToPod3 pod1 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_2\"" "\"$MAC_ADDR_POD_1\"" "\"$IP_2\"" "\"$IP_1\"" 100 pod2ToPod1 pod1 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_3\"" "\"$MAC_ADDR_POD_1\"" "\"$IP_3\"" "\"$IP_1\"" 100 pod3ToPod1 pod1 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_2\"" "\"$MAC_ADDR_POD_2\"" "\"$IP_2\"" "\"$IP_2\"" 100 samePod2 pod2 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_2\"" "\"$MAC_ADDR_POD_1\"" "\"$IP_2\"" "\"$IP_1\"" 100 pod2ToPod1 pod2 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_2\"" "\"$MAC_ADDR_POD_3\"" "\"$IP_2\"" "\"$IP_3\"" 100 pod2ToPod3 pod2 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_3\"" "\"$MAC_ADDR_POD_1\"" "\"$IP_3\"" "\"$IP_1\"" 100 pod3ToPod2 pod2 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_1\"" "\"$MAC_ADDR_POD_2\"" "\"$IP_1\"" "\"$IP_2\"" 100 pod1ToPod2 pod2 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_3\"" "\"$MAC_ADDR_POD_3\"" "\"$IP_3\"" "\"$IP_3\"" 100 samePod3 pod3 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_3\"" "\"$MAC_ADDR_POD_1\"" "\"$IP_3\"" "\"$IP_1\"" 100 pod3ToPod1 pod3 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_3\"" "\"$MAC_ADDR_POD_2\"" "\"$IP_3\"" "\"$IP_2\"" 100 pod3ToPod2 pod3 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_1\"" "\"$MAC_ADDR_POD_3\"" "\"$IP_1\"" "\"$IP_3\"" 100 pod1ToPod3 pod3 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_2\"" "\"$MAC_ADDR_POD_3\"" "\"$IP_2\"" "\"$IP_3\"" 100 pod2ToPod3 pod3 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_1\"" "\"$MAC_ADDR_POD_1\"" "\"$IP_1\"" "\"$IP_1\"" 1000 samePod1 pod1 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_1\"" "\"$MAC_ADDR_POD_2\"" "\"$IP_1\"" "\"$IP_2\"" 1000 pod1ToPod2 pod1 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_1\"" "\"$MAC_ADDR_POD_3\"" "\"$IP_1\"" "\"$IP_3\"" 1000 pod1ToPod3 pod1 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_2\"" "\"$MAC_ADDR_POD_1\"" "\"$IP_2\"" "\"$IP_1\"" 1000 pod2ToPod1 pod1 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_3\"" "\"$MAC_ADDR_POD_1\"" "\"$IP_3\"" "\"$IP_1\"" 1000 pod3ToPod1 pod1 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_2\"" "\"$MAC_ADDR_POD_2\"" "\"$IP_2\"" "\"$IP_2\"" 1000 samePod2 pod2 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_2\"" "\"$MAC_ADDR_POD_1\"" "\"$IP_2\"" "\"$IP_1\"" 1000 pod2ToPod1 pod2 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_2\"" "\"$MAC_ADDR_POD_3\"" "\"$IP_2\"" "\"$IP_3\"" 1000 pod2ToPod3 pod2 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_3\"" "\"$MAC_ADDR_POD_1\"" "\"$IP_3\"" "\"$IP_1\"" 1000 pod3ToPod2 pod2 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_1\"" "\"$MAC_ADDR_POD_2\"" "\"$IP_1\"" "\"$IP_2\"" 1000 pod1ToPod2 pod2 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_3\"" "\"$MAC_ADDR_POD_3\"" "\"$IP_3\"" "\"$IP_3\"" 1000 samePod3 pod3 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_3\"" "\"$MAC_ADDR_POD_1\"" "\"$IP_3\"" "\"$IP_1\"" 1000 pod3ToPod1 pod3 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_3\"" "\"$MAC_ADDR_POD_2\"" "\"$IP_3\"" "\"$IP_2\"" 1000 pod3ToPod2 pod3 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_1\"" "\"$MAC_ADDR_POD_3\"" "\"$IP_1\"" "\"$IP_3\"" 1000 pod1ToPod3 pod3 $CNI
-   /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"$MAC_ADDR_POD_2\"" "\"$MAC_ADDR_POD_3\"" "\"$IP_2\"" "\"$IP_3\"" 1000 pod2ToPod3 pod3 $CNI
+   for (( minion_n=1; minion_n<=$N; minion_n++ ))
+   do
+      export IP_$minion_n MAC_ADDR_POD_$minion_n
+   done
+   bytes=(100 1000)
+   for byte in "${bytes[@]}"
+   do
+      echo "$byte bytes"
+      for (( i=1; i<=$N; i++ ))
+      do
+         for (( j=1; j<=$N; j++ ))
+         do
+            declare ip1_name="IP_$i"
+            declare ip2_name="IP_$j"
+            declare mac1_pod="MAC_ADDR_POD_$i"
+            declare mac2_pod="MAC_ADDR_POD_$j"
+            if [ "$i" -eq "$j" ]; then
+               /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"${!mac1_pod}\"" "\"${!mac1_pod}\"" "\"${!ip1_name}\"" "\"${!ip2_name}\"" $byte samePod$i pod$i $CNI
+            else
+               /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"${!mac1_pod}\"" "\"${!mac2_pod}\"" "\"${!ip1_name}\"" "\"${!ip2_name}\"" $byte pod${i}ToPod${j} pod$i $CNI
+               /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"${!mac2_pod}\"" "\"${!mac1_pod}\"" "\"${!ip2_name}\"" "\"${!ip1_name}\"" $byte pod${j}ToPod${i} pod$i $CNI
+            fi
+         done
+      done
+   done
    echo "Creating Single POD and UDP Packet for this..."
-   /vagrant/ext/kites/scripts/linux/single-pod-create-udp-traffic.sh $CNI
+   /vagrant/ext/kites/scripts/linux/single-pod-create-udp-traffic.sh $CNI $N
 fi
