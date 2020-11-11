@@ -18,11 +18,11 @@ done
 
 
 ###TCP TEST FOR PODS AND NODES WITH IPERF3
-#echo -e "TCP TEST\n" > TCP_IPERF_OUTPUT.txt
-#/vagrant/ext/kites/scripts/linux/tcp-test.sh $ID_EXP
-#echo -e "TCP TEST NODES\n" > TCP_IPERF_NODE_OUTPUT.txt
-#sudo apt install -y sshpass
-#for (( minion_n=1; minion_n<=$N; minion_n++ ))
-#do
-#    sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@k8s-minion-${minion_n}.k8s-play.local "/vagrant/ext/kites/scripts/linux/tcp-test-node.sh $ID_EXP"
-#done
+echo -e "TCP TEST\n" > TCP_IPERF_OUTPUT.txt
+/vagrant/ext/kites/scripts/linux/tcp-test.sh $ID_EXP $N
+echo -e "TCP TEST NODES\n" > TCP_IPERF_NODE_OUTPUT.txt
+sudo apt install -y sshpass
+for (( minion_n=1; minion_n<=$N; minion_n++ ))
+do
+    sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@k8s-minion-${minion_n}.k8s-play.local "/vagrant/ext/kites/scripts/linux/tcp-test-node.sh $ID_EXP $N"
+done
