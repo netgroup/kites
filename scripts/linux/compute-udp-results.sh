@@ -1,20 +1,21 @@
 #!/bin/bash
-echo "PPS, CONFIG, RX/TX, TXED/TOTX" >> udp_results.csv
+calc() { awk "BEGIN{ printf \"%.2f\n\", $* }"; }
+echo "PPS, CONFIG_CODE, CONFIG, RX/TX, TXED/TOTX" >> udp_results.csv
 INPUT=$1
-
 OLDIFS=$IFS
 IFS=','
+
 [ ! -f $INPUT ] && { echo "$INPUT file not found"; exit 99; }
-#awk -F"," '$5 == "10000"' $INPUT > temp.csv
+
 for (( pps=10000; pps<=60000; pps+=5000 ))
 do
     echo $pps
     awk -F"," '$5=='$pps'' $INPUT > temp.csv
-    configs_names=("SamePod" "PodsOnDiffNode" "PodsOnSameNode")
+    configs_names=("SamePod" "PodsOnSameNode" "PodsOnDiffNode")
     configs=("0" "1" "2")
     for config in "${configs[@]}"
     do
-        echo "config= $config"
+        echo "config= ${configs_names[$config]}"
         awk -F, '$19=='$config'' temp.csv > temp${configs_names[$config]}.csv
         incoming_tot=0
         outgoing_tot=0
@@ -30,15 +31,15 @@ do
             echo "outgoing tot: $outgoing_tot"
             echo "n: $n"
         done < temp${configs_names[$config]}.csv
-        incoming_avg=$((incoming_tot/n))
-        outgoing_avg=$((outgoing_tot/n))
+        incoming_avg=$(calc $incoming_tot/$n)
+        outgoing_avg=$(calc $outgoing_tot/$n)
         echo "avg_inc $incoming_avg"
-        echo "avg_out $incoming_avg"
-        rxtx_ratio=$((incoming_avg/outgoing_avg))
-        totxpkt=$pps*10
-        txedtx_ratio=$((outgoing_avg/totxpkt))
+        echo "avg_out $outgoing_avg"
+        rxtx_ratio=$(calc $incoming_avg/$outgoing_avg)
+        totxpkt=$((pps*10))
+        txedtx_ratio=$(calc $outgoing_avg/$totxpkt)
         echo "RATIO: $rxtx_ratio"
-        echo "$pps, ${configs_names[$config]}, $rxtx_ratio, $txedtx_ratio" >> udp_results.csv
+        echo "$pps, $config, ${configs_names[$config]}, $rxtx_ratio, $txedtx_ratio" >> udp_results.csv
         rm temp${configs_names[$config]}.csv
     done
     rm temp.csv
