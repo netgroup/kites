@@ -28,6 +28,7 @@ then
     rm temp.csv
     # CNI | Tipo di test | ID_EXP | From VM | To VM | From Pod | To Pod | From IP | To IP | Outgoing | Out Unit | Incoming | Inc Unit | Passed | Pas Unit | TX Time | RX Time | TIMESTAMP
     /vagrant/ext/kites/scripts/linux/compute-udp-results.sh netsniff-trafgen-tests.csv
+    /vagrant/ext/kites/scripts/linux/compute-udp-throughput.sh udp_results.csv
 fi
 
 if $TCP_TEST
