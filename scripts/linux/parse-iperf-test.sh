@@ -2,9 +2,13 @@
 # CNI | Tipo di test | ID_EXP | From VM | To VM | From Pod | To Pod | From IP | To IP | Outgoing | Out Unit | Incoming | Inc Unit | Passed | Pas Unit | TX Time | RX Time | TIMESTAMP
 CNI=$1
 iperf_input=$2
+N=$3
 cd /vagrant/ext/kites/pod-shared/tests/$CNI
+declare n_plus=$((N + 1))
+declare comb=$n_plus*$N
+declare end=$((comb - 1))
 
-for (( X=0; X<=297; X+=27))
+for (( X=0; X<=$end*27; X+=27))
 do
 VM_SRC=$(awk 'NR=='$X+3' { print $3}' < $iperf_input)
 echo $VM_SRC

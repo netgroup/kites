@@ -31,7 +31,9 @@ do
         declare ip2_pod="POD_IP_$j"
         declare host1_pod="POD_HOSTNAME_$i"
         declare host2_pod="POD_HOSTNAME_$j"
+        echo "host1_pod= ${!host1_pod}"
+        echo "host2_pod= ${!host2_pod}"
         kubectl exec -i ${!name1_pod} -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"${!ip1_pod}\" \"${!ip2_pod}\" \"${!host1_pod}\" \"${!host2_pod}\" \"${!name1_pod}\" \"${!name2_pod}\" $ID_EXP"
-        kubectl exec -i ${!name1_pod} -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"${!ip1_pod}\" \"$SINGLE_POD_IP\" \"${!name1_pod}\" \"$SINGLE_POD_HOSTNAME\" \"${!name1_pod}\" \"$SINGLE_POD_NAME\" $ID_EXP"
     done
+    kubectl exec -i ${!name1_pod} -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"${!ip1_pod}\" \"$SINGLE_POD_IP\" \"${!host1_pod}\" \"$SINGLE_POD_HOSTNAME\" \"${!name1_pod}\" \"$SINGLE_POD_NAME\" $ID_EXP"
 done
