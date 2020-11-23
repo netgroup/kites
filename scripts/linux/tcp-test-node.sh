@@ -42,7 +42,7 @@ do
    declare ip1_pod="POD_IP_$minion_n"
    echo "$ip1_pod = ${!ip1_pod}"
    declare host1_pod="POD_HOSTNAME_$minion_n"
-   /vagrant/ext/kites/scripts/linux/iperf-test-node.sh \"$IP_HOSTNAME\" ${!ip1_pod} \"$HOSTNAME\" ${!host1_pod} "NO_POD" \"${!name1_pod}\" $ID_EXP
+   /vagrant/ext/kites/scripts/linux/iperf-test-node.sh \"$IP_HOSTNAME\" ${!ip1_pod} \"$HOSTNAME\" ${!host1_pod} "NO_POD" ${!name1_pod} $ID_EXP
 done
 /vagrant/ext/kites/scripts/linux/iperf-test-node.sh \"$IP_HOSTNAME\" \"$SINGLE_POD_IP\" \"$HOSTNAME\" \"$SINGLE_POD_HOSTNAME\" "NO_POD" \"$SINGLE_POD_NAME\" $ID_EXP
 exit
