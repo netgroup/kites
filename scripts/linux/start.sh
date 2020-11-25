@@ -38,7 +38,7 @@ done
 
 start=`date +%s`
 /vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N 
-/vagrant/ext/kites/scripts/linux/initialize-net-test.sh $CNI $N
+/vagrant/ext/kites/scripts/linux/initialize-net-test.sh $CNI $N $RUN_TEST_UDP
 /vagrant/ext/kites/scripts/linux/make-net-test.sh $N $RUN_TEST_TCP $RUN_TEST_UDP
 /vagrant/ext/kites/scripts/linux/parse-test.sh $CNI $N $RUN_TEST_TCP $RUN_TEST_UDP
 end=`date +%s`

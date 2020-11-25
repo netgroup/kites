@@ -4,14 +4,16 @@ CNI=$1
 iperf_input=$2
 N=$3
 cd /vagrant/ext/kites/pod-shared/tests/$CNI
-declare n_plus=$((N + 1))
-declare comb=$n_plus*$N
-declare end=$((comb - 1))
-
-for (( X=0; X<=$end*27; X+=27))
+# declare n_plus=$((N + 1))
+# declare comb=$n_plus*$N
+comb=$(wc -l $iperf_input | awk '{ print $1 }')
+echo "comb = $comb"
+declare end=$((comb - 27))
+echo "end= $end"
+for (( X=0; X<=$end; X+=27))
 do
 VM_SRC=$(awk 'NR=='$X+3' { print $3}' < $iperf_input)
-echo $VM_SRC
+#echo $VM_SRC
 VM_DEST=$(awk 'NR=='$X+3' { print $6}' < $iperf_input)
 #echo $VM_DEST 
 POD_SRC=$(awk 'NR=='$X+5' { print $3}' < $iperf_input)

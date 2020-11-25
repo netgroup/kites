@@ -62,7 +62,7 @@ do
             kubectl exec -i ${!name1_pod} -- bash -c "/vagrant/ext/kites/scripts/linux/trafgen-test.sh samePod$i-${BYTE}byte.cfg \"${!ip1_pod}\" \"${!ip1_pod}\" \"${!host1_pod}\" \"${!host1_pod}\" \"${!name1_pod}\" \"${!name1_pod}\" ${!folder1p_name} $BYTE $PPS"
         else
             kubectl exec -i ${!name1_pod} -- bash -c "/vagrant/ext/kites/scripts/linux/netsniff-test.sh pod${j}ToPod${i}-${BYTE}byte.pcap \"${!ip2_pod}\" \"${!ip1_pod}\" \"${!host2_pod}\" \"${!host1_pod}\" \"${!name2_pod}\" \"${!name1_pod}\" ${!folder1p_name} $BYTE $PPS $ID_EXP" & sleep 2 &&
-            kubectl exec -i ${!name2_pod} -- bash -c "/vagrant/ext/kites/scripts/linux/trafgen-test.sh pod${j}ToPod${i}-${BYTE}byte.cfg \"${!ip2_pod}\" \"${!ip1_pod}\" \"${!host2_pod}\" \"${!host1_pod}\" \"${!name2_pod}\" \"${!name1_pod}1\" ${!folder2p_name} $BYTE $PPS"
+            kubectl exec -i ${!name2_pod} -- bash -c "/vagrant/ext/kites/scripts/linux/trafgen-test.sh pod${j}ToPod${i}-${BYTE}byte.cfg \"${!ip2_pod}\" \"${!ip1_pod}\" \"${!host2_pod}\" \"${!host1_pod}\" \"${!name2_pod}\" \"${!name1_pod}\" ${!folder2p_name} $BYTE $PPS"
         fi
         sleep $INTER_EXPERIMENT_SLEEP
     done

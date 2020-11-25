@@ -2,14 +2,17 @@
 # CNI | Tipo di test | PPS | From VM | To VM | From Pod | To Pod | From IP | To IP | Outgoing | Incoming | Passed | TX Time | RX Time
 CNI=$1
 netsniff_input=$2
-echo $netsniff_input
 trafgen_input=$3
 N=$4
-declare n_plus=$((N + 1))
-declare end=$n_plus*$N
+# declare n_plus=$((N + 1))
+# declare end=$n_plus*$N
+comb_n=$(wc -l $netsniff_input | awk '{ print $1 }')
+declare end_n=$((comb_n - 18))
+
+
 cd /vagrant/ext/kites/pod-shared/tests/$CNI
 
-for (( X=0; X<=$end*18; X+=18))
+for (( X=0; X<=$end_n; X+=18))
 do
     #echo "X = $X"
     VM_SRC=$(awk 'NR=='$X+3' { print $3}' < $netsniff_input)
@@ -60,7 +63,10 @@ do
     /vagrant/ext/kites/scripts/linux/create-csv-from-netsniff.sh $CNI $TEST_TYPE $ID_EXP $PPS $VM_SRC $VM_DEST $POD_SRC $POD_DEST $IP_SRC $IP_DEST $INCOMING $PASSED $RX_TIME $TIMESTAMP $BYTE $CONFIG $CONFIG_CODE
 done
 
-for (( X=0; X<=$end*19; X+=19))
+comb_t=$(wc -l $trafgen_input | awk '{ print $1 }')
+declare end_t=$((comb_t - 19))
+
+for (( X=0; X<=$end_t; X+=19))
 do
     OUTGOING=$(awk 'NR=='$X+16' { print $2}' < $trafgen_input)
     #echo $OUTGOING
