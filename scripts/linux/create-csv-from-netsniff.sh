@@ -17,5 +17,8 @@ TIMESTAMP=${14}
 BYTE=${15}
 CONFIG=${16}
 CONFIG_CODE=${17}
+OUTGOING=${18}
+echo "outgoing = $OUTGOING"
+TX_TIME=${19}
 cd /vagrant/ext/kites/pod-shared/tests/$CNI
-echo "$CNI, $TEST_TYPE, $ID_EXP, $BYTE, $PPS, $VM_SRC, $VM_DEST, $POD_SRC, $POD_DEST, $IP_SRC, $IP_DEST, ,$INCOMING, $PASSED, ,$RX_TIME, $TIMESTAMP, $CONFIG, $CONFIG_CODE" >> netsniff-tests.csv
+echo "$CNI, $TEST_TYPE, $ID_EXP, $BYTE, $PPS, $VM_SRC, $VM_DEST, $POD_SRC, $POD_DEST, $IP_SRC, $IP_DEST, $OUTGOING ,$INCOMING, $PASSED, $TX_TIME ,$RX_TIME, $TIMESTAMP, $CONFIG, $CONFIG_CODE" >> netsniff-tests.csv
