@@ -23,11 +23,7 @@ then
     do
         /vagrant/ext/kites/scripts/linux/parse-netsniff-test.sh $CNI /vagrant/ext/kites/pod-shared/NETSNIFF-1000byte-${pps}pps.txt /vagrant/ext/kites/pod-shared/TRAFGEN-1000byte-${pps}pps.txt $N
     done
-    # awk -F, '{getline f1 <"trafgen-tests.csv" ;print f1,$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$13,$14,$16,$17,$18,$19}' OFS=, netsniff-tests.csv > temp.csv
-    # awk -F, -v OFS=, '{ print $3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$1,$14,$15,$2,$16,$17,$18,$19}' temp.csv > netsniff-trafgen-tests.csv
-    # rm temp.csv
-    # CNI | Tipo di test | ID_EXP | From VM | To VM | From Pod | To Pod | From IP | To IP | Outgoing | Out Unit | Incoming | Inc Unit | Passed | Pas Unit | TX Time | RX Time | TIMESTAMP
-    # /vagrant/ext/kites/scripts/linux/compute-udp-results.sh -tests.csv
+    
     /vagrant/ext/kites/scripts/linux/compute-udp-results.sh netsniff-tests.csv
     /vagrant/ext/kites/scripts/linux/compute-udp-throughput.sh udp_results.csv
 fi

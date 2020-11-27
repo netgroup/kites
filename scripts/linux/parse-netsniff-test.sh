@@ -29,7 +29,6 @@ do
     SEC_TX=$(awk 'NR=='$X+18' { print $2}' < $trafgen_input)
     USEC_TX=$(awk 'NR=='$X+18' { print $4}' < $trafgen_input | sed 's/\(^...\).*/\1/')
     TX_TIME=$SEC_TX.${USEC_TX}
-    #echo "transmission time, lo trova?"
     #echo $TX_TIME 
     /vagrant/ext/kites/scripts/linux/create-csv-from-trafgen.sh $CNI $OUTGOING $TX_TIME $VM_SRC $VM_DEST $POD_SRC $POD_DEST $PPS
 done
@@ -94,29 +93,12 @@ do
 
     while read outgoing tx_time vm_src vm_dest pod_src pod_dest pps
     do
-        # echo "PRIMA DELL'IF outoging = $outgoing di $vm_src $vm_dest $pod_src $pod_dest $pps"
-        # echo "ma vale lo scope di $VM_SRC e $VM_DEST qui dentro?"
-        # if [ "$VM_SRC" = "$vm_src" ]; then
-        #     echo "le vm sono uguali: $VM_SRC == $vm_src"
-        # elif [[ "$vm_dest" == "$VM_DEST" ]]; then
-        #     echo "$vm_dest == $VM_DEST"
-        # elif [[ $VM_SRC == $vm_src ]]; then
-        #     echo "te sta bene?!"
-        # elif [ $VM_SRC = $vm_src ]; then
-        #     echo "te prego"
-        # else
-        #     echo "niente da fa"
-        # fi
         if [ "$pps" -eq "$PPS" ]; then
             if [ "$vm_src" = "$VM_SRC" ] && [ "$vm_dest" = "$VM_DEST" ] && [ "$pod_src" = "$POD_SRC" ] && [ "$pod_dest" = "$POD_DEST" ]; then
-                # echo "$vm_src == $VM_SRC" && echo "$vm_dest == $VM_DEST" &&  echo "$pod_src == $POD_SRC" && echo "$pod_dest == $POD_DEST" && echo "$pps == $PPS"
-                # echo "ougoing $outgoing di $vm_src $vm_dest $pod_src $pod_dest $pps"
                 OUTGOING=$outgoing
                 echo "outgoing= $OUTGOING"
                 TX_TIME=$tx_time
                 echo "txtime = $TX_TIME"
-            else
-                echo "non gli è piaciuto"
             fi
         fi
     done < trafgen-tests.csv
