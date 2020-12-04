@@ -2,6 +2,9 @@
 N=$1
 TCP_TEST=$2
 UDP_TEST=$3
+RUN_TEST_SAME=$4
+RUN_TEST_SAMENODE=$5
+RUN_TEST_DIFF=$6
 
 if [ -d "/vagrant/ext/kites/pod-shared/" ] 
 then
@@ -18,7 +21,7 @@ if $UDP_TEST
 then
     for (( pps=10000; pps<=60000; pps+=5000 ))
     do
-        /vagrant/ext/kites/scripts/linux/udp-test.sh $pps 1000 $ID_EXP $N
+        /vagrant/ext/kites/scripts/linux/udp-test.sh $pps 1000 $ID_EXP $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF
         /vagrant/ext/kites/scripts/linux/merge-udp-test.sh $pps 1000 $N
     done
 fi

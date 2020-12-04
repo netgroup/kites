@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "PacketRate, CONFIG_CODE, CONFIG, RX/TX" >> udp_throughput.csv
+echo "PacketRate, CONFIG_CODE, CONFIG, RX/TX" > udp_throughput.csv
 INPUT=$1
 [ ! -f $INPUT ] && { echo "$INPUT file not found"; exit 99; }
 

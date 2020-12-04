@@ -1,6 +1,6 @@
 #!/bin/bash
 calc() { awk "BEGIN{ printf \"%.2f\n\", $* }"; }
-echo "PPS, CONFIG_CODE, CONFIG, RX/TX, TXED/TOTX" >> udp_results.csv
+echo "PPS, CONFIG_CODE, CONFIG, RX/TX, TXED/TOTX" > udp_results.csv
 INPUT=$1
 OLDIFS=$IFS
 IFS=','

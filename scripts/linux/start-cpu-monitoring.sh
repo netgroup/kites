@@ -1,4 +1,9 @@
 #!/bin/bash
+TEST_TYPE=$1
+DURATION=$2
+CPU_TEST=$3
+echo "test type: $TEST_TYPE"
+echo "duration: $DURATION"
 HOSTNAME=$(hostname)
 if [ -d "/vagrant/ext/kites/cpu/" ] 
 then
@@ -8,15 +13,16 @@ else
     echo "Creating: Directory /vagrant/ext/kites/cpu/"
     mkdir -p /vagrant/ext/kites/cpu/ && cd /vagrant/ext/kites/cpu/
 fi
-echo "DATE, CPU-${HOSTNAME}" > cpu-$HOSTNAME.txt
-RUNTIME="5 second"
+echo "$TEST_TYPE" >> cpu-$HOSTNAME-$CPU_TEST.txt
+echo "DATE, CPU-${HOSTNAME}" >> cpu-$HOSTNAME-$CPU_TEST.txt
+RUNTIME="$DURATION second"
 ENDTIME=$(date -ud "$RUNTIME" +%s)
 while [[ $(date -u +%s) -le $ENDTIME ]]
 do 
 	DATE=$(date "+%Y-%m-%d %H:%M:%S")
 	CPU_USAGE=$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1"%"}')
     SINGLE_LINE="$DATE, $CPU_USAGE"
-	echo $SINGLE_LINE >> cpu-$HOSTNAME.txt
+	echo $SINGLE_LINE >> cpu-$HOSTNAME-$CPU_TEST.txt
     #top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1"%"}' >> cpu-$HOSTNAME.txt
     sleep 1
 done

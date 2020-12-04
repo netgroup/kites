@@ -10,7 +10,7 @@ echo -e "TRAFGEN TEST - ${BYTE}byte - ${PPS}pps\n" > TRAFGEN-${BYTE}byte-${PPS}p
 
 for (( minion_n=1; minion_n<=$N; minion_n++ ))
 do
-    cd $BASE_FOLDER/pod$minion_n
+    cd $BASE_FOLDER/pod$minion_n || continue
     cat NETSNIFF-${BYTE}byte-${PPS}pps.txt > temp_netsniff.txt
     mv temp_netsniff.txt ..
     #rm NETSNIFF-${BYTE}byte-${PPS}pps.txt
