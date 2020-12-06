@@ -31,7 +31,7 @@ fi
 if $TCP_TEST
 then
     echo -e "TCP TEST\n" > TCP_IPERF_OUTPUT.txt
-    /vagrant/ext/kites/scripts/linux/tcp-test.sh $ID_EXP $N
+    /vagrant/ext/kites/scripts/linux/tcp-test.sh $ID_EXP $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF
 
     echo -e "TCP TEST NODES\n" > TCP_IPERF_NODE_OUTPUT.txt
     sudo apt install -y sshpass

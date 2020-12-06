@@ -1,6 +1,10 @@
 #!/bin/bash
 N=$2
 BASE_FOLDER=/vagrant/ext/kites/pod-shared
+RUN_TEST_SAME=$3
+RUN_TEST_SAMENODE=$4
+RUN_TEST_DIFF=$5
+RUN_TEST_CPU=$6
 TCP_TEST="TCP"
 cd $BASE_FOLDER
 
@@ -35,18 +39,21 @@ do
         echo "host1_pod= ${!host1_pod}"
         echo "host2_pod= ${!host2_pod}"
         if [ "$i" -eq "$j" ] && $RUN_TEST_SAME; then
-            /vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "SAMEPOD" 10 $TCP_TEST
+            if $RUN_TEST_CPU; then
+                /vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "SAMEPOD: ${!name1_pod//[$' ']/}" 10 $TCP_TEST
+            fi
             kubectl exec -i ${!name1_pod} -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"${!ip1_pod}\" \"${!ip2_pod}\" \"${!host1_pod}\" \"${!host2_pod}\" \"${!name1_pod}\" \"${!name2_pod}\" $ID_EXP"
         elif [ "${!host1_pod}" != "${!host2_pod}" ] &&  $RUN_TEST_DIFF; then
-            /vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "DIFFPOD" 10 $TCP_TEST
+            if $RUN_TEST_CPU; then
+                /vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "DIFFERENTNODES: ${!host1_pod//[$' ']/} TO ${!host2_pod//[$' ']/}" 10 $TCP_TEST
+            fi
             kubectl exec -i ${!name1_pod} -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"${!ip1_pod}\" \"${!ip2_pod}\" \"${!host1_pod}\" \"${!host2_pod}\" \"${!name1_pod}\" \"${!name2_pod}\" $ID_EXP"
         fi
     done
-    if [ "$SINGLE_POD_IP" = "${!host1_pod}" ] && $RUN_TEST_SAMENODE; then
-        /vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "SAMEnode" 10 $TCP_TEST
-        kubectl exec -i ${!name1_pod} -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"${!ip1_pod}\" \"$SINGLE_POD_IP\" \"${!host1_pod}\" \"$SINGLE_POD_HOSTNAME\" \"${!name1_pod}\" \"$SINGLE_POD_NAME\" $ID_EXP"
-    elif [ "$SINGLE_POD_IP" != "${!host1_pod}" ] && $RUN_TEST_DIFF; then
-        /vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "DIFF" 10 $TCP_TEST
+    if ( [ "${SINGLE_POD_HOSTNAME//[$' ']/}" = "${!host1_pod//[$' ']/}" ] && $RUN_TEST_SAMENODE ) || ( [ "${SINGLE_POD_HOSTNAME//[$' ']/}" != "${!host1_pod//[$' ']/}" ]  && $RUN_TEST_DIFF ); then
+        if $RUN_TEST_CPU; then
+            /vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "SINGLEPOD TO ${!name1_pod//[$' ']/}" 10 $TCP_TEST
+        fi
         kubectl exec -i ${!name1_pod} -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"${!ip1_pod}\" \"$SINGLE_POD_IP\" \"${!host1_pod}\" \"$SINGLE_POD_HOSTNAME\" \"${!name1_pod}\" \"$SINGLE_POD_NAME\" $ID_EXP"
     fi
 done
