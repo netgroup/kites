@@ -11,6 +11,6 @@ function log() {
 
     datestring=$(date +'%Y-%m-%d %H:%M:%S')
     # Expand escaped characters, wrap at 70 chars, indent wrapped lines
-    echo -e "$datestring $2" | fold -w70 -s | sed '2~1s/^/  /' 
+    echo -e "$datestring $2" | fold -w140 -s | sed '2~1s/^/  /' 
 
 }
