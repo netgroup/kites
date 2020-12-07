@@ -61,8 +61,9 @@ do
 			echo "Benchmark will run only following configuration: ${1}"
 			;;
 		--nocpu|-nc)
-			shift
 			RUN_TEST_CPU="false"
+			echo "cpu monitoring won't be performed"
+			echo "RUN_TEST_CPU=$RUN_TEST_CPU"
 		;;
 		
     esac

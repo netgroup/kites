@@ -5,6 +5,7 @@ UDP_TEST=$3
 RUN_TEST_SAME=$4
 RUN_TEST_SAMENODE=$5
 RUN_TEST_DIFF=$6
+RUN_TEST_CPU=$7
 
 if [ -d "/vagrant/ext/kites/pod-shared/" ] 
 then
@@ -21,7 +22,7 @@ if $UDP_TEST
 then
     for (( pps=10000; pps<=60000; pps+=5000 ))
     do
-        /vagrant/ext/kites/scripts/linux/udp-test.sh $pps 1000 $ID_EXP $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF
+        /vagrant/ext/kites/scripts/linux/udp-test.sh $pps 1000 $ID_EXP $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
         /vagrant/ext/kites/scripts/linux/merge-udp-test.sh $pps 1000 $N
     done
 fi
@@ -31,7 +32,7 @@ fi
 if $TCP_TEST
 then
     echo -e "TCP TEST\n" > TCP_IPERF_OUTPUT.txt
-    /vagrant/ext/kites/scripts/linux/tcp-test.sh $ID_EXP $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF
+    /vagrant/ext/kites/scripts/linux/tcp-test.sh $ID_EXP $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
 
     echo -e "TCP TEST NODES\n" > TCP_IPERF_NODE_OUTPUT.txt
     sudo apt install -y sshpass
