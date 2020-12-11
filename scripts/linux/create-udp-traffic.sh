@@ -61,12 +61,10 @@ if [ "$CNI" == "flannel" ]; then
    sudo apt install -y sshpass
    for (( minion_n=1; minion_n<=$N; minion_n++ ))
    do
-      declare n_plus=$((minion_n + 1))
-      min_name=$(awk 'NR=='$n_plus' { print $3}' podNameAndIP.txt)
-      declare -x "MINION_$minion_n"= $min_name
-      declare minion="MINION_$minion_n"
-      min_mac=$(sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@${!minion} "/vagrant/ext/kites/scripts/linux/get-mac-address-cni-node.sh")
-      declare -x "MAC_ADDR_MINION_$minion_n"= $min_mac
+      declare minion="VM_NAME_$minion_n"
+      echo ${!minion}
+      min_mac=$(sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@${!minion//[$' ']/}.k8s-play.local "/vagrant/ext/kites/scripts/linux/get-mac-address-cni-node.sh")
+      declare -x "MAC_ADDR_MINION_$minion_n= $min_mac"
    done
    echo "Creating UDP Packet for DaemonSet..."
    for (( minion_n=1; minion_n<=$N; minion_n++ ))

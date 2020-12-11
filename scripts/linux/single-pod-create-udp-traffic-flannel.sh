@@ -22,28 +22,25 @@ echo "l'host del single pod è $MINION_SINGLE_POD"
 for (( minion_n=1; minion_n<=$N; minion_n++ ))
 do
     declare hostname="MINION_$minion_n"
-    echo "controllo che l'host del single pod $MINION_SINGLE_POD sia uguale a ${hostname}. E' vero?"
-    if [ "${hostname}" = "$MINION_SINGLE_POD" ]; then
-    echo "Sì"
-    bytes=(100 1000)
-    for byte in "${bytes[@]}"
-    do
-        echo "allora creo il traffico per $byte bytes"
-        bash /vagrant/ext/kites/scripts/linux/single-pod-create-udp-packets.sh "\"$MAC_ADDR_SINGLE_POD\"" "\"$MAC_ADDR_SINGLE_POD\"" "\"$IP_PARSED_SINGLE_POD\"" "\"$IP_PARSED_SINGLE_POD\"" $byte singlePodToSinglePod single-pod $CNI
-        for (( j=1; j<=$N; j++ ))
+    if [ "${!hostname//[$' ']/}" = "$MINION_SINGLE_POD" ]; then
+        bytes=(100 1000)
+        for byte in "${bytes[@]}"
         do
-            declare mac_addr_pod="MAC_ADDR_POD_$minion_n"
-            declare mac_addr_minion="MAC_ADDR_MINION_$minion_n"
-            declare ip_pod="IP_$j"
-            if [ $minion_n -eq $j ]; then
-                bash /vagrant/ext/kites/scripts/linux/single-pod-create-udp-packets.sh "\"$MAC_ADDR_SINGLE_POD\"" "\"${mac_addr_pod}\"" "\"$IP_PARSED_SINGLE_POD\"" "\"${ip_pod}\"" $byte singlePodToPod$j single-pod $CNI
-                bash /vagrant/ext/kites/scripts/linux/single-pod-create-udp-packets.sh "\"$MAC_ADDR_SINGLE_POD\"" "\"${mac_addr_pod}\"" "\"$IP_PARSED_SINGLE_POD\"" "\"${ip_pod}\"" $byte singlePodToPod$j pod$j $CNI
-            else
-                bash /vagrant/ext/kites/scripts/linux/single-pod-create-udp-packets.sh "\"$MAC_ADDR_SINGLE_POD\"" "\"${mac_addr_minion}\"" "\"$IP_PARSED_SINGLE_POD\"" "\"${ip_pod}\"" $byte singlePodToPod$j single-pod $CNI
-                bash /vagrant/ext/kites/scripts/linux/single-pod-create-udp-packets.sh "\"$MAC_ADDR_SINGLE_POD\"" "\"${mac_addr_minion}\"" "\"$IP_PARSED_SINGLE_POD\"" "\"${ip_pod}\"" $byte singlePodToPod$j pod$j $CNI
-            fi
+            echo "allora creo il traffico per $byte bytes"
+            bash /vagrant/ext/kites/scripts/linux/single-pod-create-udp-packets.sh "\"$MAC_ADDR_SINGLE_POD\"" "\"$MAC_ADDR_SINGLE_POD\"" "\"$IP_PARSED_SINGLE_POD\"" "\"$IP_PARSED_SINGLE_POD\"" $byte singlePodToSinglePod single-pod $CNI
+            for (( j=1; j<=$N; j++ ))
+            do
+                declare mac_addr_pod="MAC_ADDR_POD_$minion_n"
+                declare mac_addr_minion="MAC_ADDR_MINION_$minion_n"
+                declare ip_pod="IP_$j"
+                if [ $minion_n -eq $j ]; then
+                    bash /vagrant/ext/kites/scripts/linux/single-pod-create-udp-packets.sh "\"$MAC_ADDR_SINGLE_POD\"" "\"${mac_addr_pod}\"" "\"$IP_PARSED_SINGLE_POD\"" "\"${ip_pod}\"" $byte singlePodToPod$j single-pod $CNI
+                    bash /vagrant/ext/kites/scripts/linux/single-pod-create-udp-packets.sh "\"$MAC_ADDR_SINGLE_POD\"" "\"${mac_addr_pod}\"" "\"$IP_PARSED_SINGLE_POD\"" "\"${ip_pod}\"" $byte singlePodToPod$j pod$j $CNI
+                else
+                    bash /vagrant/ext/kites/scripts/linux/single-pod-create-udp-packets.sh "\"$MAC_ADDR_SINGLE_POD\"" "\"${mac_addr_minion}\"" "\"$IP_PARSED_SINGLE_POD\"" "\"${ip_pod}\"" $byte singlePodToPod$j single-pod $CNI
+                    bash /vagrant/ext/kites/scripts/linux/single-pod-create-udp-packets.sh "\"$MAC_ADDR_SINGLE_POD\"" "\"${mac_addr_minion}\"" "\"$IP_PARSED_SINGLE_POD\"" "\"${ip_pod}\"" $byte singlePodToPod$j pod$j $CNI
+                fi
+            done
         done
-    done
     fi
-    echo "No"
 done

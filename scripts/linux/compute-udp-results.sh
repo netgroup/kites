@@ -7,7 +7,7 @@ IFS=','
 
 [ ! -f $INPUT ] && { echo "$INPUT file not found"; exit 99; }
 
-for (( pps=10000; pps<=60000; pps+=5000 ))
+for (( pps=10000; pps<=100000; pps+=10000 ))
 do
     echo $pps
     awk -F"," '$5=='$pps'' $INPUT > temp.csv
