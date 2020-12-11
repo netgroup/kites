@@ -54,22 +54,22 @@ do
    declare -x "VM_NAME_$minion_n= $name_vm"
 done
 
+
 if [ "$CNI" == "flannel" ]; then
+   echo "TO BE CHECKED"
    echo "Obtaining MAC Addresses of the Nodes for $CNI..."
    sudo apt install -y sshpass
    for (( minion_n=1; minion_n<=$N; minion_n++ ))
    do
-      declare n_plus=$((minion_n + 1))
-      min_name=$(awk 'NR=='$n_plus' { print $3}' podNameAndIP.txt)
-      declare -x "MINION_$minion_n"= $min_name
-      declare minion="MINION_$minion_n"
-      min_mac=$(sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@${!minion} "/vagrant/ext/kites/scripts/linux/get-mac-address-cni-node.sh")
-      declare -x "MAC_ADDR_MINION_$minion_n"= $min_mac
+      declare minion="VM_NAME_$minion_n"
+      echo ${!minion}
+      min_mac=$(sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@${!minion//[$' ']/}.k8s-play.local "/vagrant/ext/kites/scripts/linux/get-mac-address-cni-node.sh")
+      declare -x "MAC_ADDR_MINION_$minion_n= $min_mac"
    done
    echo "Creating UDP Packet for DaemonSet..."
    for (( minion_n=1; minion_n<=$N; minion_n++ ))
    do
-      export IP_$minion_n MAC_ADDR_POD_$minion_n MAC_ADDR_POD_$minion_n
+      export IP_$minion_n MAC_ADDR_POD_$minion_n MAC_ADDR_MINION_$minion_n
    done
    bytes=(100 1000)
    for byte in "${bytes[@]}"
@@ -95,7 +95,7 @@ if [ "$CNI" == "flannel" ]; then
       done
    done
    echo "Creating UDP Packets for Single Pod..."
-   /vagrant/ext/kites/scripts/linux/single-pod-create-udp-traffic-flannel.sh $CNI
+   /vagrant/ext/kites/scripts/linux/single-pod-create-udp-traffic-flannel.sh $CNI $N
 else
    echo "Creating UDP Packet for DaemonSet..."
    for (( minion_n=1; minion_n<=$N; minion_n++ ))
