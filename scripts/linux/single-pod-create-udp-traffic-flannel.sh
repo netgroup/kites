@@ -2,9 +2,9 @@
 ## Get Hostname, MAC Address and IP for single POD
 CNI=$1
 N=$2
-POD=$(kubectl get pod -l app=net-test-single-pod -o jsonpath="{.items[0].metadata.name}")
-MAC_ADDR_SINGLE_POD=$(kubectl exec -i $POD -- bash -c "vagrant/ext/kites/scripts/linux/single-pod-get-mac-address.sh")
-IP_PARSED_SINGLE_POD=$(kubectl exec -i $POD -- bash -c "vagrant/ext/kites/scripts/linux/single-pod-get-ip.sh")
+POD=$(kubectl get pod -l app=net-test-single-pod -o jsonpath="{.items[0].metadata.name}" -n patata)
+MAC_ADDR_SINGLE_POD=$(kubectl exec -i $POD -- bash -c "vagrant/ext/kites/scripts/linux/single-pod-get-mac-address.sh" -n ${KITES_NAMSPACE_NAME})
+IP_PARSED_SINGLE_POD=$(kubectl exec -i $POD -- bash -c "vagrant/ext/kites/scripts/linux/single-pod-get-ip.sh" -n ${KITES_NAMSPACE_NAME})
 
 echo "bisogna controllare che questo single-pod-create-udp-traffic-flannel.sh funzioni"
 

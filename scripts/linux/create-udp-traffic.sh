@@ -6,53 +6,6 @@ RUN_TEST_SAMENODE=$4
 RUN_TEST_DIFF=$5
 echo "same $RUN_TEST_SAME same node $RUN_TEST_SAMENODE diff node $RUN_TEST_DIFF"
 
-echo "$(kubectl get pods -o wide)"
-
-if [ -d "/vagrant/ext/kites/pod-shared/" ] 
-then
-    cd /vagrant/ext/kites/pod-shared/
-else
-    echo "Directory /vagrant/ext/kites/pod-shared/ doesn't exists."
-    echo "Creating: Directory /vagrant/ext/kites/pod-shared/"
-    mkdir -p /vagrant/ext/kites/pod-shared/ && cd /vagrant/ext/kites/pod-shared/ 
-fi
-
-
-echo "Obtaining the names of the DaemonSet..."
-for (( minion_n=1; minion_n<=$N; minion_n++ ))
-do
-   declare n_plus=$((minion_n + 1))
-   nome_pod=$(awk 'NR=='$n_plus' { print $1}' podNameAndIP.txt)
-   declare -x "POD_$minion_n"=$nome_pod
-done
-
-echo "Obtaining the IPs of the DaemonSet..."
-for (( minion_n=1; minion_n<=$N; minion_n++ ))
-do
-   declare n_plus=$((minion_n + 1))
-   ip_pod=$(awk 'NR=='$n_plus' { print $2}' podNameAndIP.txt)
-   declare -x "POD_IP_$minion_n= $ip_pod"
-
-   declare ip_name=POD_IP_$minion_n
-   ip_parsed_pods=$(sed -e "s/\./, /g" <<< ${!ip_name})
-   declare -x "IP_$minion_n= $ip_parsed_pods"
-done
-
-echo "Obtaining MAC Addresses of the DaemonSet..."
-for (( minion_n=1; minion_n<=$N; minion_n++ ))
-do
-   declare pod_names=POD_$minion_n 
-   mac_pod=$(kubectl exec -i "${!pod_names}" -- bash -c "vagrant/ext/kites/scripts/linux/get-mac-address-pod.sh")
-   declare "MAC_ADDR_POD_$minion_n=$mac_pod"
-done
-
-echo "Obtaining the names of the VMs..."
-for (( minion_n=1; minion_n<=$N; minion_n++ ))
-do
-   declare n_plus=$((minion_n + 1))
-   name_vm=$(awk 'NR=='$n_plus' { print $3}' podNameAndIP.txt)
-   declare -x "VM_NAME_$minion_n= $name_vm"
-done
 
 
 if [ "$CNI" == "flannel" ]; then

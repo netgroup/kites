@@ -16,7 +16,11 @@ function display_usage() {
     echo "  --test-type | -t    : set the test-type between: all, tcp, udp. Default set =all"
     echo "  --conf              : set the configuration between: all, samepod, samenode, diffnode. Default set =all"
     echo "  --clean-all         : remove all experiment data and pods already created."
-    echo "   -h       : display this help message"
+    echo "  --namespace | -n    : set the namespace name. Default set =kites"
+    echo "  --dual-stack        : use IPv4 and IPv6 if enabled."
+    echo "  -4                  : use IPv4q only."
+    echo "  -6                  : use IPv6 only."
+    echo "  -h                  : display this help message"
 }
 
 [ "$1" = "" ] && display_usage && exit
@@ -35,6 +39,9 @@ RUN_TEST_SAMENODE="true"
 RUN_TEST_DIFF="true"
 RUN_TEST_CPU="true"
 CLEAN_ALL="false"
+IPv6DualStack="false"
+RUN_IPV4_ONLY="true"
+RUN_IPV6_ONLY="false"
 VERBOSITY_LEVEL=5 # default debug level. see in utils/logging.sh
 
 ##
@@ -46,6 +53,17 @@ VERBOSITY_LEVEL=5 # default debug level. see in utils/logging.sh
 ##
 #   Define utility functions
 ##
+
+function create_name_space() {
+    log_inf "Create a namespace if not exist."
+    CURRENT_NS=$(kubectl get namespaces -o json | jq -r ".items[].metadata.name" | grep ${KITES_NAMSPACE_NAME})
+
+    if [ "$CURRENT_NS" = "" ]; then
+        log_debug "Namespace ${KITES_NAMSPACE_NAME} doesn't exists."
+        log_debug "Creating: namespace ${KITES_NAMSPACE_NAME}."
+        kubectl create namespace ${KITES_NAMSPACE_NAME}
+    fi
+}
 
 function clean_pod_shared_dir() {
     log_inf "Clean dir. ${KITES_HOME}/pod-shared/"
@@ -62,10 +80,10 @@ function clean_pod_shared_dir() {
 function clean_all() {
     log_inf "Clean all environment from data and pods."
     log_debug "Delete daemonset  net-test-ds"
-    kubectl delete daemonset net-test-ds
+    kubectl delete daemonset net-test-ds -n ${KITES_NAMSPACE_NAME}
     log_debug "Delete pods net-test-single-pod"
-    kubectl delete pods net-test-single-pod
-    #clean_pod_shared_dir
+    kubectl delete pods net-test-single-pod -n ${KITES_NAMSPACE_NAME}
+    clean_pod_shared_dir
 }
 
 function create_pod_list() {
@@ -74,7 +92,7 @@ function create_pod_list() {
         log_debug "Creating: Directory ${KITES_HOME}/pod-shared/"
         mkdir -p ${KITES_HOME}/pod-shared/
     fi
-    kubectl get pod -o wide >${KITES_HOME}/pod-shared/podList.txt
+    kubectl get pod -n ${KITES_NAMSPACE_NAME} -o wide >${KITES_HOME}/pod-shared/podList.txt
     awk '{ print $1, $6, $7}' ${KITES_HOME}/pod-shared/podList.txt >${KITES_HOME}/pod-shared/podNameAndIP.txt
 }
 
@@ -83,16 +101,51 @@ function initialize_pods() {
     RUN_TEST_SAMENODE=$1
     #creazione daemonset
     log_debug "Create demonset."
-    kubectl apply -f ${KITES_HOME}/kubernetes/net-test-dev_ds.yaml
-    log_debug "Wait 60 sec."
-    sleep 60
-    #creazione single-pod
-    if $RUN_TEST_SAMENODE; then
-        log_debug "Create single-pod."
-        kubectl apply -f ${KITES_HOME}/kubernetes/net-test-single-pod.yaml
-        log_debug "Wait 30 sec."
-        sleep 30
-    fi
+    kubectl apply -n ${KITES_NAMSPACE_NAME} -f ${KITES_HOME}/kubernetes/net-test-dev_ds.yaml
+    log_debug "Create single-pod."
+    kubectl apply -n ${KITES_NAMSPACE_NAME} -f ${KITES_HOME}/kubernetes/net-test-single-pod.yaml
+    log_inf "Wait until all pods are running."
+    kubectl wait -n ${KITES_NAMSPACE_NAME} --for=condition=Ready pods --all --timeout=600s
+}
+
+function get_pods_info() {
+    log_inf "Get pods infos."
+    log_debug "Obtaining the names, IPs, MAC Addresse of the DaemonSet."
+    pod_index=1
+
+    for row in $(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test" -o json | jq -r ".items[] | @base64"); do
+        # most of the info are available from here
+        _jq() {
+            echo ${row} | base64 --decode | jq -r ${1}
+        }
+        log_debug "Obtaining pod name. pod number $pod_index."
+        declare -xg "POD_$pod_index"=$(_jq '.metadata.name')
+
+        log_debug "Obtaining pod IPv4. pod number $pod_index."
+        declare -xg "POD_IP_$pod_index= $(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test" -o json | jq -r ".items[$pod_index-1].status.podIPs[0].ip")"
+        declare ip_name=POD_IP_$pod_index
+        ip_parsed_pods=$(sed -e "s/\./, /g" <<<${!ip_name})
+        declare -xg "IP_$pod_index= $ip_parsed_pods"
+        log_debug "Obtaining pod IPv6. pod number $pod_index."
+        declare -xg "POD_IP6_$pod_index= $(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test" -o json | jq -r ".items[$pod_index-1].status.podIPs[1].ip")"
+
+        log_debug "Obtaining pod nodeName. pod number $pod_index."
+        declare -xg "VM_NAME_$pod_index= $(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test" -o json | jq -r ".items[$pod_index-1].spec.nodeName")"
+
+        declare pod_names=POD_$pod_index
+        mac_pod=$(kubectl -n ${KITES_NAMSPACE_NAME} exec -i "${!pod_names}" -- bash -c "${KITES_HOME}/scripts/linux/get-mac-address-pod.sh")
+        declare -xg "MAC_ADDR_POD_$pod_index=$mac_pod"
+        echo $mac_pod
+        ((pod_index++))
+    done
+
+    
+    declare -xg "POD= $(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o jsonpath="{.items[0].metadata.name}" )"
+    declare -xg "MAC_ADDR_SINGLE_POD= $(kubectl exec -n ${KITES_NAMSPACE_NAME} -i $POD -- bash -c "${KITES_HOME}/scripts/linux/single-pod-get-mac-address.sh")"
+    declare -xg "IP_PARSED_SINGLE_POD= $(kubectl exec -n ${KITES_NAMSPACE_NAME} -i $POD -- bash -c "${KITES_HOME}/scripts/linux/single-pod-get-ip.sh")"
+    declare -xg "single_pod_vm= $(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o json | jq -r ".items[0].spec.nodeName")"
+
+
 }
 
 function initialize_net_test() {
@@ -106,6 +159,7 @@ function initialize_net_test() {
 
     initialize_pods $RUN_TEST_SAMENODE
     create_pod_list
+    get_pods_info
 
     if $RUN_TEST_UDP; then
         # TODO refactoring this script
@@ -125,6 +179,9 @@ function print_all_setup_parameters() {
     log_debug " RUN_TEST_DIFF=${RUN_TEST_DIFF}"
     log_debug " RUN_TEST_CPU=${RUN_TEST_CPU}"
     log_debug " CLEAN_ALL=${CLEAN_ALL}"
+    log_debug " IPv6DualStack=${IPv6DualStack}"
+    log_debug " RUN_IPV4_ONLY=${RUN_IPV4_ONLY}"
+    log_debug " RUN_IPV6_ONLY=${RUN_IPV6_ONLY}"
     log_debug " VERBOSITY_LEVEL=${VERBOSITY_LEVEL}"
 }
 
@@ -140,6 +197,9 @@ while [ $# -gt 0 ]; do
         ;;
     --nodes)
         N=$2
+        ;;
+    --namespace | -n)
+        KITES_NAMSPACE_NAME=$2
         ;;
     --clean-all)
         CLEAN_ALL="true"
@@ -188,12 +248,9 @@ while [ $# -gt 0 ]; do
             *) error "Invalid argument: $1\n" && display_usage && exit ;;
             esac
         done
-        echo "Benchmark will run only following configuration: ${1}"
         ;;
     --nocpu | -nc)
-        #shift
         RUN_TEST_CPU="false"
-        echo "Benchmark will run only following configuration: ${1}"
         ;;
     --help | -h)
         display_usage && exit
@@ -220,10 +277,12 @@ if $RUN_TEST_CPU; then
     start_cpu_monitor_nodes $N "IDLE" 10 "IDLE"
 fi
 
+create_name_space
+
 initialize_net_test $CNI $N $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF
 
-/vagrant/ext/kites/scripts/linux/make-net-test.sh $N $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
-/vagrant/ext/kites/scripts/linux/parse-test.sh $CNI $N $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU
+# /vagrant/ext/kites/scripts/linux/make-net-test.sh $N $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
+# /vagrant/ext/kites/scripts/linux/parse-test.sh $CNI $N $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU
 
 end=$(date +%s)
 log_inf "KITES stop. Execution time was $(expr $end - $start) seconds."

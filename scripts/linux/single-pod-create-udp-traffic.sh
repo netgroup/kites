@@ -7,10 +7,7 @@ RUN_TEST_SAMENODE=$4
 RUN_TEST_DIFF=$5
 
 echo "diff nodes? $RUN_TEST_DIFF"
-POD=$(kubectl get pod -l app=net-test-single-pod -o jsonpath="{.items[0].metadata.name}")
-MAC_ADDR_SINGLE_POD=$(kubectl exec -i $POD -- bash -c "vagrant/ext/kites/scripts/linux/single-pod-get-mac-address.sh")
-IP_PARSED_SINGLE_POD=$(kubectl exec -i $POD -- bash -c "vagrant/ext/kites/scripts/linux/single-pod-get-ip.sh")
-single_pod_vm=$(awk 'NR=='$((N + 2))' { print $3}' podNameAndIP.txt)
+
 
 echo "Creating UDP Packets for single POD" 
 if $RUN_TEST_SAME; then
