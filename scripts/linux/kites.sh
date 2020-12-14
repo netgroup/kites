@@ -29,8 +29,9 @@ function display_usage() {
 #   Deafult parameters
 ##
 
-KITES_HOME="/vagrant/ext/kites"
-KITES_NAMSPACE_NAME="kites"
+declare -xg KITES_HOME="/vagrant/ext/kites"
+declare -xg KITES_NAMSPACE_NAME="kites"
+
 N=2
 RUN_TEST_TCP="true"
 RUN_TEST_UDP="true"
@@ -110,7 +111,7 @@ function initialize_pods() {
 
 function get_pods_info() {
     log_inf "Get pods infos."
-    log_debug "Obtaining the names, IPs, MAC Addresse of the DaemonSet."
+    log_debug "Obtaining the names, IPs, MAC Address of the DaemonSet."
     pod_index=1
 
     for row in $(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test" -o json | jq -r ".items[] | @base64"); do
@@ -119,7 +120,7 @@ function get_pods_info() {
             echo ${row} | base64 --decode | jq -r ${1}
         }
         log_debug "Obtaining pod name. pod number $pod_index."
-        declare -xg "POD_$pod_index"=$(_jq '.metadata.name')
+        declare -xg "POD_NAME_$pod_index"=$(_jq '.metadata.name')
 
         log_debug "Obtaining pod IPv4. pod number $pod_index."
         declare -xg "POD_IP_$pod_index= $(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test" -o json | jq -r ".items[$pod_index-1].status.podIPs[0].ip")"
@@ -130,21 +131,24 @@ function get_pods_info() {
         declare -xg "POD_IP6_$pod_index= $(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test" -o json | jq -r ".items[$pod_index-1].status.podIPs[1].ip")"
 
         log_debug "Obtaining pod nodeName. pod number $pod_index."
-        declare -xg "VM_NAME_$pod_index= $(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test" -o json | jq -r ".items[$pod_index-1].spec.nodeName")"
+        declare -xg "POD_HOSTNAME_$pod_index= $(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test" -o json | jq -r ".items[$pod_index-1].spec.nodeName")"
 
-        declare pod_names=POD_$pod_index
-        mac_pod=$(kubectl -n ${KITES_NAMSPACE_NAME} exec -i "${!pod_names}" -- bash -c "${KITES_HOME}/scripts/linux/get-mac-address-pod.sh")
+        log_debug "Obtaining pod MAC. pod number $pod_index."
+        declare pod_name=POD_NAME_$pod_index
+        mac_pod=$(kubectl -n ${KITES_NAMSPACE_NAME} exec -i "${!pod_name}" -- bash -c "${KITES_HOME}/scripts/linux/get-mac-address-pod.sh")
         declare -xg "MAC_ADDR_POD_$pod_index=$mac_pod"
-        echo $mac_pod
+        echo "Name: ${!pod_name}, IPv4: ${!ip_name}, MAC: $mac_pod"
         ((pod_index++))
     done
 
-    
-    declare -xg "POD= $(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o jsonpath="{.items[0].metadata.name}" )"
-    declare -xg "MAC_ADDR_SINGLE_POD= $(kubectl exec -n ${KITES_NAMSPACE_NAME} -i $POD -- bash -c "${KITES_HOME}/scripts/linux/single-pod-get-mac-address.sh")"
-    declare -xg "IP_PARSED_SINGLE_POD= $(kubectl exec -n ${KITES_NAMSPACE_NAME} -i $POD -- bash -c "${KITES_HOME}/scripts/linux/single-pod-get-ip.sh")"
-    declare -xg "single_pod_vm= $(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o json | jq -r ".items[0].spec.nodeName")"
+    log_debug "Obtaining the names, IPs, MAC Addresse of the SinglePOD."
+    declare -xg "SINGLE_POD_NAME= $(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o jsonpath="{.items[0].metadata.name}")"
+    declare -xg "MAC_ADDR_SINGLE_POD= $(kubectl exec -n ${KITES_NAMSPACE_NAME} -i $SINGLE_POD_NAME -- bash -c "${KITES_HOME}/scripts/linux/single-pod-get-mac-address.sh")"
 
+    declare -xg "SINGLE_POD_IP= $(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o jsonpath="{.items[0].status.podIPs[0].ip}")"
+    declare -xg "IP_PARSED_SINGLE_POD=$(sed -e "s/\./, /g" <<<${SINGLE_POD_IP})"
+    declare -xg "SINGLE_POD_IP6= $(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o jsonpath="{.items[0].status.podIPs[1].ip}")"
+    declare -xg "SINGLE_POD_HOSTNAME= $(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o json | jq -r ".items[0].spec.nodeName")"
 
 }
 
@@ -165,6 +169,85 @@ function initialize_net_test() {
         # TODO refactoring this script
         /vagrant/ext/kites/scripts/linux/create-udp-traffic.sh $CNI $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF
     fi
+}
+
+function exec_net_test() {
+    log_inf "Start execution net test."
+    N=$1
+    TCP_TEST=$2
+    UDP_TEST=$3
+    RUN_TEST_SAME=$4
+    RUN_TEST_SAMENODE=$5
+    RUN_TEST_DIFF=$6
+    RUN_TEST_CPU=$7
+    ID_EXP=exp-1 # TODO make it configurable
+
+    if $UDP_TEST; then
+        for ((pps = 10000; pps <= 100000; pps += 10000)); do
+            ${KITES_HOME}/scripts/linux/udp-test.sh $pps 1000 $ID_EXP $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
+            ${KITES_HOME}/scripts/linux/merge-udp-test.sh $pps 1000 $N
+        done
+    fi
+
+    ###TCP TEST FOR PODS AND NODES WITH IPERF3
+    if $TCP_TEST; then
+        echo -e "TCP TEST\n" >TCP_IPERF_OUTPUT.txt
+        ${KITES_HOME}/scripts/linux/tcp-test.sh $ID_EXP $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
+
+        echo -e "TCP TEST NODES\n" >TCP_IPERF_NODE_OUTPUT.txt
+        for ((minion_n = 1; minion_n <= $N; minion_n++)); do
+            sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@k8s-minion-${minion_n}.k8s-play.local "${KITES_HOME}/scripts/linux/tcp-test-node.sh $ID_EXP $N"
+        done
+    fi
+}
+
+function parse_test() {
+    log_inf "Start parsing test results."
+    CNI=$1
+    N=$2
+    TCP_TEST=$3
+    UDP_TEST=$4
+
+    if [ ! -d "${KITES_HOME}/pod-shared/tests/$CNI" ]; then
+        log_debug "Directory ${KITES_HOME}/pod-shared/tests/$CNI doesn't exists."
+        log_debug "Creating: Directory ${KITES_HOME}/pod-shared/tests/$CNI"
+        mkdir -p ${KITES_HOME}/pod-shared/tests/$CNI
+    fi
+
+    cd ${KITES_HOME}/pod-shared/tests/$CNI
+
+    if $UDP_TEST; then
+        echo "CNI, TEST_TYPE, ID_EXP, BYTE, PPS, VM_SRC, VM_DEST, POD_SRC, POD_DEST, IP_SRC, IP_DEST, OUTGOING, INCOMING, PASSED, TX_TIME, RX_TIME, TIMESTAMP, CONFIG, CONFIG_CODE" >netsniff-tests.csv
+        echo "OUTGOING, TX_TIME, VM_SRC, VM_DEST, POD_SRC, POD_DEST, PPS" >trafgen-tests.csv
+
+        # CNI | Tipo di test | ID_EXP | PPS | From VM | To VM | From Pod | To Pod | From IP | To IP | Outgoing | Incoming | Passed | TX Time | RX Time | TIMESTAMP
+        for ((pps = 10000; pps <= 100000; pps += 10000)); do
+            ${KITES_HOME}/scripts/linux/parse-netsniff-test.sh $CNI ${KITES_HOME}/pod-shared/NETSNIFF-1000byte-${pps}pps.txt ${KITES_HOME}/pod-shared/TRAFGEN-1000byte-${pps}pps.txt $N
+        done
+
+        ${KITES_HOME}/scripts/linux/compute-udp-results.sh netsniff-tests.csv
+        ${KITES_HOME}/scripts/linux/compute-udp-throughput.sh udp_results.csv
+    fi
+
+    if $TCP_TEST; then
+        echo "CNI, TEST_TYPE, ID_EXP, VM_SRC, VM_DEST, POD_SRC, POD_DEST, IP_SRC, IP_DEST, OUTGOING, OUT_UNIT, INCOMING, INC_UNIT, THROUGHPUT, THR_UNIT, TX_TIME, RX_TIME, TIMESTAMP" >iperf-tests.csv
+        #TCP TEST FOR PODS AND NODES WITH IPERF3
+        ${KITES_HOME}/scripts/linux/parse-iperf-test.sh $CNI "${KITES_HOME}/pod-shared/TCP_IPERF_OUTPUT.txt" $N
+        ${KITES_HOME}/scripts/linux/parse-iperf-test-node.sh $CNI "${KITES_HOME}/pod-shared/TCP_IPERF_NODE_OUTPUT.txt" $N
+    fi
+
+    log_debug "Remoe contents inside ${KITES_HOME}/tests/"
+    rm -rf "${KITES_HOME}/tests/${CNI}"
+    
+    if [ ! -d "${KITES_HOME}/tests/" ]; then
+        log_debug "Directory ${KITES_HOME}/tests/ doesn't exists."
+        log_debug "Creating: Directory ${KITES_HOME}/tests/"
+        mkdir -p ${KITES_HOME}/tests/
+    fi
+    
+    log_debug "Moving results in ${KITES_HOME}/tests/"
+    mv "${KITES_HOME}/pod-shared/tests/${CNI}" "${KITES_HOME}/tests/"
+
 }
 
 function print_all_setup_parameters() {
@@ -281,8 +364,8 @@ create_name_space
 
 initialize_net_test $CNI $N $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF
 
-# /vagrant/ext/kites/scripts/linux/make-net-test.sh $N $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
-# /vagrant/ext/kites/scripts/linux/parse-test.sh $CNI $N $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU
+exec_net_test $N $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
+parse_test $CNI $N $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU
 
 end=$(date +%s)
 log_inf "KITES stop. Execution time was $(expr $end - $start) seconds."

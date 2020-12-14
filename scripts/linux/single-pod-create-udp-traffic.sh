@@ -21,10 +21,10 @@ do
    do
    		declare ip1_name="IP_$i"
 		declare mac_pod="MAC_ADDR_POD_$i"
-		declare name_vm1="VM_NAME_$i"
-		echo "nomehost ${!name_vm1} e nome single pod $single_pod_vm ed vero? $RUN_TEST_DIFF"
-		if  ( [ "${single_pod_vm//[$' ']/}" = "${!name_vm1//[$' ']/}" ] && $RUN_TEST_SAMENODE ) || ( [ "${single_pod_vm//[$' ']/}" != "${!name_vm1//[$' ']/}" ] && $RUN_TEST_DIFF ); then
-			echo "$single_pod_vm = ${!name_vm1}"
+		declare name_vm1="POD_HOSTNAME_$i"
+		echo "nomehost ${!name_vm1} e nome single pod $SINGLE_POD_HOSTNAME ed vero? $RUN_TEST_DIFF"
+		if  ( [ "${SINGLE_POD_HOSTNAME//[$' ']/}" = "${!name_vm1//[$' ']/}" ] && $RUN_TEST_SAMENODE ) || ( [ "${SINGLE_POD_HOSTNAME//[$' ']/}" != "${!name_vm1//[$' ']/}" ] && $RUN_TEST_DIFF ); then
+			echo "$SINGLE_POD_HOSTNAME = ${!name_vm1}"
 			bash /vagrant/ext/kites/scripts/linux/single-pod-create-udp-packets.sh "\"$MAC_ADDR_SINGLE_POD\"" "\"${!mac_pod}\"" "\"$IP_PARSED_SINGLE_POD\"" "\"${!ip1_name}\"" $byte singlePodToPod$i single-pod $CNI
 			bash /vagrant/ext/kites/scripts/linux/single-pod-create-udp-packets.sh "\"$MAC_ADDR_SINGLE_POD\"" "\"${!mac_pod}\"" "\"$IP_PARSED_SINGLE_POD\"" "\"${!ip1_name}\"" $byte singlePodToPod$i pod$i $CNI
 		fi
