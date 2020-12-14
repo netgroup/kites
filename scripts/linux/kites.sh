@@ -161,7 +161,7 @@ function initialize_net_test() {
     RUN_TEST_SAMENODE=$5
     RUN_TEST_DIFF=$6
 
-    initialize_pods $RUN_TEST_SAMENODE
+    initialize_pods "$RUN_TEST_SAMENODE"
     create_pod_list
     get_pods_info
 
@@ -184,18 +184,18 @@ function exec_net_test() {
 
     if $UDP_TEST; then
         for ((pps = 10000; pps <= 100000; pps += 10000)); do
-            ${KITES_HOME}/scripts/linux/udp-test.sh $pps 1000 $ID_EXP $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
-            ${KITES_HOME}/scripts/linux/merge-udp-test.sh $pps 1000 $N
+            ${KITES_HOME}/scripts/linux/udp-test.sh "$pps" 1000 "$ID_EXP" "$N" "$RUN_TEST_SAME" "$RUN_TEST_SAMENODE" "$RUN_TEST_DIFF" "$RUN_TEST_CPU"
+            ${KITES_HOME}/scripts/linux/merge-udp-test.sh "$pps" 1000 "$N"
         done
     fi
 
     ###TCP TEST FOR PODS AND NODES WITH IPERF3
     if $TCP_TEST; then
         echo -e "TCP TEST\n" >TCP_IPERF_OUTPUT.txt
-        ${KITES_HOME}/scripts/linux/tcp-test.sh $ID_EXP $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
+        ${KITES_HOME}/scripts/linux/tcp-test.sh "$ID_EXP" "$N" "$RUN_TEST_SAME" "$RUN_TEST_SAMENODE" "$RUN_TEST_DIFF" "$RUN_TEST_CPU"
 
         echo -e "TCP TEST NODES\n" >TCP_IPERF_NODE_OUTPUT.txt
-        for ((minion_n = 1; minion_n <= $N; minion_n++)); do
+        for ((minion_n = 1; minion_n <= "$N"; minion_n++)); do
             sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@k8s-minion-${minion_n}.k8s-play.local "${KITES_HOME}/scripts/linux/tcp-test-node.sh $ID_EXP $N"
         done
     fi
@@ -211,10 +211,10 @@ function parse_test() {
     if [ ! -d "${KITES_HOME}/pod-shared/tests/$CNI" ]; then
         log_debug "Directory ${KITES_HOME}/pod-shared/tests/$CNI doesn't exists."
         log_debug "Creating: Directory ${KITES_HOME}/pod-shared/tests/$CNI"
-        mkdir -p ${KITES_HOME}/pod-shared/tests/$CNI
+        mkdir -p "${KITES_HOME}/pod-shared/tests/$CNI"
     fi
 
-    cd ${KITES_HOME}/pod-shared/tests/$CNI
+    cd "${KITES_HOME}/pod-shared/tests/$CNI"
 
     if $UDP_TEST; then
         echo "CNI, TEST_TYPE, ID_EXP, BYTE, PPS, VM_SRC, VM_DEST, POD_SRC, POD_DEST, IP_SRC, IP_DEST, OUTGOING, INCOMING, PASSED, TX_TIME, RX_TIME, TIMESTAMP, CONFIG, CONFIG_CODE" >netsniff-tests.csv
@@ -222,7 +222,7 @@ function parse_test() {
 
         # CNI | Tipo di test | ID_EXP | PPS | From VM | To VM | From Pod | To Pod | From IP | To IP | Outgoing | Incoming | Passed | TX Time | RX Time | TIMESTAMP
         for ((pps = 10000; pps <= 100000; pps += 10000)); do
-            ${KITES_HOME}/scripts/linux/parse-netsniff-test.sh $CNI ${KITES_HOME}/pod-shared/NETSNIFF-1000byte-${pps}pps.txt ${KITES_HOME}/pod-shared/TRAFGEN-1000byte-${pps}pps.txt $N
+            ${KITES_HOME}/scripts/linux/parse-netsniff-test.sh "$CNI" ${KITES_HOME}/pod-shared/NETSNIFF-1000byte-${pps}pps.txt ${KITES_HOME}/pod-shared/TRAFGEN-1000byte-${pps}pps.txt "$N"
         done
 
         ${KITES_HOME}/scripts/linux/compute-udp-results.sh netsniff-tests.csv
@@ -232,8 +232,8 @@ function parse_test() {
     if $TCP_TEST; then
         echo "CNI, TEST_TYPE, ID_EXP, VM_SRC, VM_DEST, POD_SRC, POD_DEST, IP_SRC, IP_DEST, OUTGOING, OUT_UNIT, INCOMING, INC_UNIT, THROUGHPUT, THR_UNIT, TX_TIME, RX_TIME, TIMESTAMP" >iperf-tests.csv
         #TCP TEST FOR PODS AND NODES WITH IPERF3
-        ${KITES_HOME}/scripts/linux/parse-iperf-test.sh $CNI "${KITES_HOME}/pod-shared/TCP_IPERF_OUTPUT.txt" $N
-        ${KITES_HOME}/scripts/linux/parse-iperf-test-node.sh $CNI "${KITES_HOME}/pod-shared/TCP_IPERF_NODE_OUTPUT.txt" $N
+        ${KITES_HOME}/scripts/linux/parse-iperf-test.sh "$CNI" "${KITES_HOME}/pod-shared/TCP_IPERF_OUTPUT.txt" "$N"
+        ${KITES_HOME}/scripts/linux/parse-iperf-test-node.sh "$CNI" "${KITES_HOME}/pod-shared/TCP_IPERF_NODE_OUTPUT.txt" "$N"
     fi
 
     log_debug "Remoe contents inside ${KITES_HOME}/tests/"
@@ -357,16 +357,16 @@ start=$(date +%s)
 log_inf "KITES start."
 
 if $RUN_TEST_CPU; then
-    start_cpu_monitor_nodes $N "IDLE" 10 "IDLE"
+    start_cpu_monitor_nodes "$N" "IDLE" 10 "IDLE"
 fi
 
 create_name_space
 
-initialize_net_test $CNI $N $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF
+initialize_net_test "$CNI" "$N" $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF
 
-exec_net_test $N $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
-parse_test $CNI $N $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU
+exec_net_test "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
+parse_test "$CNI" "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU
 
 end=$(date +%s)
-log_inf "KITES stop. Execution time was $(expr $end - $start) seconds."
+log_inf "KITES stop. Execution time was $(expr "$end" - "$start") seconds."
 log_debug "Carla is a killer of VMs."
