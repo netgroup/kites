@@ -18,7 +18,7 @@ function display_usage() {
     echo "  --clean-all         : remove all experiment data and pods already created."
     echo "  --namespace | -n    : set the namespace name. Default set =kites"
     echo "  --dual-stack        : use IPv4 and IPv6 if enabled."
-    echo "  -4                  : use IPv4q only."
+    echo "  -4                  : use IPv4 only."
     echo "  -6                  : use IPv6 only."
     echo "  -h                  : display this help message"
 }
