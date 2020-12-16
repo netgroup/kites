@@ -167,8 +167,52 @@ function initialize_net_test() {
 
     if $RUN_TEST_UDP; then
         # TODO refactoring this script
-        /vagrant/ext/kites/scripts/linux/create-udp-traffic.sh $CNI $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF
+        ${KITES_HOME}/scripts/linux/create-udp-traffic.sh $CNI $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF
     fi
+}
+
+function exec_tcp_test_between_pods() {
+    log_inf "Start execution TCP net test between pods."
+    ID_EXP=$1
+    N=$2
+    RUN_TEST_SAME=$3
+    RUN_TEST_SAMENODE=$4
+    RUN_TEST_DIFF=$5
+    RUN_TEST_CPU=$6
+    TCP_TEST="TCP"
+    cd "${KITES_HOME}/pod-shared"
+
+    for ((i = 1; i <= $N; i++)); do
+        log_debug "POD $i to other PODS..."
+        log_debug "----------------------------------------------\n\n"
+        for ((j = 1; j <= $N; j++)); do
+            declare name1_pod="POD_NAME_$i"
+            declare name2_pod="POD_NAME_$j"
+            declare ip1_pod="POD_IP_$i"
+            declare ip2_pod="POD_IP_$j"
+            declare host1_pod="POD_HOSTNAME_$i"
+            declare host2_pod="POD_HOSTNAME_$j"
+            log_debug "host1_pod= ${!host1_pod}    host2_pod= ${!host2_pod}"
+
+            if [ "$i" -eq "$j" ] && $RUN_TEST_SAME; then
+                if $RUN_TEST_CPU; then
+                    ${KITES_HOME}/scripts/linux/cpu-monitoring.sh "$N" "SAMEPOD: ${!name1_pod//[$' ']/}" 10 $TCP_TEST
+                fi
+                kubectl -n ${KITES_NAMSPACE_NAME} exec -i ${!name1_pod} -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"${!ip1_pod}\" \"${!ip2_pod}\" \"${!host1_pod}\" \"${!host2_pod}\" \"${!name1_pod}\" \"${!name2_pod}\" $ID_EXP"
+            elif [ "${!host1_pod}" != "${!host2_pod}" ] && $RUN_TEST_DIFF; then
+                if $RUN_TEST_CPU; then
+                    ${KITES_HOME}/scripts/linux/cpu-monitoring.sh "$N" "DIFFERENTNODES: ${!host1_pod//[$' ']/} TO ${!host2_pod//[$' ']/}" 10 $TCP_TEST
+                fi
+                kubectl -n ${KITES_NAMSPACE_NAME} exec -i ${!name1_pod} -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"${!ip1_pod}\" \"${!ip2_pod}\" \"${!host1_pod}\" \"${!host2_pod}\" \"${!name1_pod}\" \"${!name2_pod}\" $ID_EXP"
+            fi
+        done
+        if ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" = "${!host1_pod//[$' ']/}" ] && $RUN_TEST_SAMENODE) || ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" != "${!host1_pod//[$' ']/}" ] && $RUN_TEST_DIFF); then
+            if $RUN_TEST_CPU; then
+                ${KITES_HOME}/scripts/linux/cpu-monitoring.sh "$N" "SINGLEPOD TO ${!name1_pod//[$' ']/}" 10 $TCP_TEST
+            fi
+            kubectl -n ${KITES_NAMSPACE_NAME} exec -i ${!name1_pod} -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"${!ip1_pod}\" \"$SINGLE_POD_IP\" \"${!host1_pod}\" \"$SINGLE_POD_HOSTNAME\" \"${!name1_pod}\" \"$SINGLE_POD_NAME\" $ID_EXP"
+        fi
+    done
 }
 
 function exec_net_test() {
@@ -191,12 +235,13 @@ function exec_net_test() {
 
     ###TCP TEST FOR PODS AND NODES WITH IPERF3
     if $TCP_TEST; then
+        cd "${KITES_HOME}/pod-shared"
         echo -e "TCP TEST\n" >TCP_IPERF_OUTPUT.txt
-        ${KITES_HOME}/scripts/linux/tcp-test.sh "$ID_EXP" "$N" "$RUN_TEST_SAME" "$RUN_TEST_SAMENODE" "$RUN_TEST_DIFF" "$RUN_TEST_CPU"
+        exec_tcp_test_between_pods "$ID_EXP" "$N" "$RUN_TEST_SAME" "$RUN_TEST_SAMENODE" "$RUN_TEST_DIFF" "$RUN_TEST_CPU"
 
         echo -e "TCP TEST NODES\n" >TCP_IPERF_NODE_OUTPUT.txt
         for ((minion_n = 1; minion_n <= "$N"; minion_n++)); do
-            sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@k8s-minion-${minion_n}.k8s-play.local "${KITES_HOME}/scripts/linux/tcp-test-node.sh $ID_EXP $N"
+            sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@k8s-minion-"${minion_n}".k8s-play.local "${KITES_HOME}/scripts/linux/tcp-test-node.sh $ID_EXP $N"
         done
     fi
 }
@@ -236,15 +281,15 @@ function parse_test() {
         ${KITES_HOME}/scripts/linux/parse-iperf-test-node.sh "$CNI" "${KITES_HOME}/pod-shared/TCP_IPERF_NODE_OUTPUT.txt" "$N"
     fi
 
-    log_debug "Remoe contents inside ${KITES_HOME}/tests/"
+    log_debug "Removing contents inside ${KITES_HOME}/tests/"
     rm -rf "${KITES_HOME}/tests/${CNI}"
-    
+
     if [ ! -d "${KITES_HOME}/tests/" ]; then
         log_debug "Directory ${KITES_HOME}/tests/ doesn't exists."
         log_debug "Creating: Directory ${KITES_HOME}/tests/"
         mkdir -p ${KITES_HOME}/tests/
     fi
-    
+
     log_debug "Moving results in ${KITES_HOME}/tests/"
     mv "${KITES_HOME}/pod-shared/tests/${CNI}" "${KITES_HOME}/tests/"
 
