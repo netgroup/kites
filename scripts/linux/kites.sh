@@ -17,7 +17,7 @@ function display_usage() {
     echo "  --conf              : set the configuration between: all, samepod, samenode, diffnode. Default set =all"
     echo "  --clean-all         : remove all experiment data and pods already created."
     echo "  --namespace | -n    : set the namespace name. Default set =kites"
-    echo "  --dual-stack        : use IPv4 and IPv6 if enabled."
+    #echo "  --dual-stack        : use IPv4 and IPv6 if enabled."
     echo "  -4                  : use IPv4 only."
     echo "  -6                  : use IPv6 only."
     echo "  -h                  : display this help message"
@@ -113,42 +113,82 @@ function get_pods_info() {
     log_inf "Get pods infos."
     log_debug "Obtaining the names, IPs, MAC Address of the DaemonSet."
     pod_index=1
-
+    node_index=1
+    echo "" >${KITES_HOME}/pod-shared/pods_nodes.env
     for row in $(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test" -o json | jq -r ".items[] | @base64"); do
         # most of the info are available from here
         _jq() {
             echo ${row} | base64 --decode | jq -r ${1}
         }
+
         log_debug "Obtaining pod name. pod number $pod_index."
         declare -xg "POD_NAME_$pod_index"=$(_jq '.metadata.name')
+        declare pod_name=POD_NAME_$pod_index
+        echo "POD_NAME_"$pod_index"="${!pod_name}"" >>${KITES_HOME}/pod-shared/pods_nodes.env
 
         log_debug "Obtaining pod IPv4. pod number $pod_index."
-        declare -xg "POD_IP_$pod_index= $(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test" -o json | jq -r ".items[$pod_index-1].status.podIPs[0].ip")"
+        declare -xg "POD_IP_$pod_index=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test" -o json | jq -r ".items[$pod_index-1].status.podIPs[0].ip")"
         declare ip_name=POD_IP_$pod_index
+        echo "${!ip_name}"
+        echo "POD_IP_"$pod_index"="${!ip_name}"" >>${KITES_HOME}/pod-shared/pods_nodes.env
         ip_parsed_pods=$(sed -e "s/\./, /g" <<<${!ip_name})
         declare -xg "IP_$pod_index= $ip_parsed_pods"
+
         log_debug "Obtaining pod IPv6. pod number $pod_index."
-        declare -xg "POD_IP6_$pod_index= $(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test" -o json | jq -r ".items[$pod_index-1].status.podIPs[1].ip")"
+        declare -xg "POD_IP6_$pod_index=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test" -o json | jq -r ".items[$pod_index-1].status.podIPs[1].ip")"
+        declare ip6_name=POD_IP6_$pod_index
+        echo "POD_IP6_$pod_index="${!ip6_name}"" >>${KITES_HOME}/pod-shared/pods_nodes.env
 
         log_debug "Obtaining pod nodeName. pod number $pod_index."
-        declare -xg "POD_HOSTNAME_$pod_index= $(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test" -o json | jq -r ".items[$pod_index-1].spec.nodeName")"
-
+        declare -xg "POD_HOSTNAME_$pod_index=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test" -o json | jq -r ".items[$pod_index-1].spec.nodeName")"
+        declare pod_hostname=POD_HOSTNAME_$pod_index
+        echo "POD_HOSTNAME_$pod_index=${!pod_hostname}">> ${KITES_HOME}/pod-shared/pods_nodes.env
         log_debug "Obtaining pod MAC. pod number $pod_index."
         declare pod_name=POD_NAME_$pod_index
         mac_pod=$(kubectl -n ${KITES_NAMSPACE_NAME} exec -i "${!pod_name}" -- bash -c "${KITES_HOME}/scripts/linux/get-mac-address-pod.sh")
         declare -xg "MAC_ADDR_POD_$pod_index=$mac_pod"
+        #echo "MAC_ADDR_POD_$pod_index=$mac_pod">> ${KITES_HOME}/pod-shared/pods_nodes.env
         echo "Name: ${!pod_name}, IPv4: ${!ip_name}, MAC: $mac_pod"
         ((pod_index++))
     done
 
     log_debug "Obtaining the names, IPs, MAC Addresse of the SinglePOD."
-    declare -xg "SINGLE_POD_NAME= $(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o jsonpath="{.items[0].metadata.name}")"
-    declare -xg "MAC_ADDR_SINGLE_POD= $(kubectl exec -n ${KITES_NAMSPACE_NAME} -i $SINGLE_POD_NAME -- bash -c "${KITES_HOME}/scripts/linux/single-pod-get-mac-address.sh")"
-
-    declare -xg "SINGLE_POD_IP= $(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o jsonpath="{.items[0].status.podIPs[0].ip}")"
+    declare -xg "SINGLE_POD_NAME=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o jsonpath="{.items[0].metadata.name}")"
+    echo "SINGLE_POD_NAME="$SINGLE_POD_NAME"" >>${KITES_HOME}/pod-shared/pods_nodes.env
+    declare -xg "MAC_ADDR_SINGLE_POD=$(kubectl exec -n ${KITES_NAMSPACE_NAME} -i $SINGLE_POD_NAME -- bash -c "${KITES_HOME}/scripts/linux/single-pod-get-mac-address.sh")"
+    #echo "MAC_ADDR_SINGLE_POD="$MAC_ADDR_SINGLE_POD"">> ${KITES_HOME}/pod-shared/pods_nodes.env
+    declare -xg "SINGLE_POD_IP=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o jsonpath="{.items[0].status.podIPs[0].ip}")"
+    echo "SINGLE_POD_IP=$SINGLE_POD_IP" >>${KITES_HOME}/pod-shared/pods_nodes.env
     declare -xg "IP_PARSED_SINGLE_POD=$(sed -e "s/\./, /g" <<<${SINGLE_POD_IP})"
-    declare -xg "SINGLE_POD_IP6= $(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o jsonpath="{.items[0].status.podIPs[1].ip}")"
-    declare -xg "SINGLE_POD_HOSTNAME= $(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o json | jq -r ".items[0].spec.nodeName")"
+    #echo "IP_PARSED_SINGLE_POD="$IP_PARSED_SINGLE_POD"">> ${KITES_HOME}/pod-shared/pods_nodes.env
+    declare -xg "SINGLE_POD_IP6=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o jsonpath="{.items[0].status.podIPs[1].ip}")"
+    echo "SINGLE_POD_IP6="$SINGLE_POD_IP6"" >>${KITES_HOME}/pod-shared/pods_nodes.env
+    declare -xg "SINGLE_POD_HOSTNAME=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o json | jq -r ".items[0].spec.nodeName")"
+    echo "SINGLE_POD_HOSTNAME="$SINGLE_POD_HOSTNAME"" >>${KITES_HOME}/pod-shared/pods_nodes.env
+
+    log_debug "Obtaining the names, IPs, MAC Addresse of  worker nodes."
+    for row in $(kubectl get nodes --selector='!node-role.kubernetes.io/master' -o json | jq -r ".items[] | @base64"); do
+        _jq() {
+            echo ${row} | base64 --decode | jq -r ${1}
+        }
+        log_debug "Obtaining node name. node number $node_index."
+        declare -xg "NODE_NAME_$node_index"=$(_jq '.metadata.name')
+        declare node_name=NODE_NAME_$node_index
+        echo "NODE_NAME_"$node_index"="${!node_name}"" >>${KITES_HOME}/pod-shared/pods_nodes.env
+
+        for addr in $(kubectl get nodes ${!node_name} -o json | jq -r ".status.addresses[] | @base64"); do
+            _jqa() {
+                echo ${addr} | base64 --decode | jq -r ${1}
+            }
+            if [ "$(_jqa '.type')" == "InternalIP" ]; then
+                declare -xg "NODE_IP_$node_index"="$(_jqa '.address')"
+                declare node_ip=NODE_IP_$node_index
+                echo "NODE_IP_$node_index="${!node_ip}"" >>${KITES_HOME}/pod-shared/pods_nodes.env
+            fi
+        done
+
+        ((node_index++))
+    done
 
 }
 
@@ -164,7 +204,6 @@ function initialize_net_test() {
     initialize_pods "$RUN_TEST_SAMENODE"
     create_pod_list
     get_pods_info
-
     if $RUN_TEST_UDP; then
         # TODO refactoring this script
         ${KITES_HOME}/scripts/linux/create-udp-traffic.sh $CNI $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF
@@ -174,43 +213,47 @@ function initialize_net_test() {
 function exec_tcp_test_between_pods() {
     log_inf "Start execution TCP net test between pods."
     ID_EXP=$1
-    N=$2
-    RUN_TEST_SAME=$3
-    RUN_TEST_SAMENODE=$4
-    RUN_TEST_DIFF=$5
-    RUN_TEST_CPU=$6
     TCP_TEST="TCP"
     cd "${KITES_HOME}/pod-shared"
 
     for ((i = 1; i <= $N; i++)); do
         log_debug "POD $i to other PODS..."
-        log_debug "----------------------------------------------\n\n"
+        log_debug "----------------------------------------------"
         for ((j = 1; j <= $N; j++)); do
             declare name1_pod="POD_NAME_$i"
             declare name2_pod="POD_NAME_$j"
-            declare ip1_pod="POD_IP_$i"
-            declare ip2_pod="POD_IP_$j"
+            if [ "$RUN_IPV4_ONLY" == "true" ]; then
+                declare ip1_pod="POD_IP_$i"
+                declare ip2_pod="POD_IP_$j"
+            elif [ "$RUN_IPV6_ONLY" == "true" ]; then
+                declare ip1_pod="POD_IP6_$i"
+                declare ip2_pod="POD_IP6_$j"
+            fi
+
             declare host1_pod="POD_HOSTNAME_$i"
             declare host2_pod="POD_HOSTNAME_$j"
             log_debug "host1_pod= ${!host1_pod}    host2_pod= ${!host2_pod}"
-
-            if [ "$i" -eq "$j" ] && $RUN_TEST_SAME; then
-                if $RUN_TEST_CPU; then
-                    ${KITES_HOME}/scripts/linux/cpu-monitoring.sh "$N" "SAMEPOD: ${!name1_pod//[$' ']/}" 10 $TCP_TEST
+            if $RUN_TEST_CPU; then
+                if [ "$i" -eq "$j" ] && $RUN_TEST_SAME; then
+                    start_cpu_monitor_nodes "$N" "SAMEPOD: ${!name1_pod//[$' ']/}" 10 $TCP_TEST
+                elif [ "${!host1_pod}" != "${!host2_pod}" ] && $RUN_TEST_DIFF; then
+                    start_cpu_monitor_nodes "$N" "DIFFERENTNODES: ${!host1_pod//[$' ']/} TO ${!host2_pod//[$' ']/}" 10 $TCP_TEST
                 fi
-                kubectl -n ${KITES_NAMSPACE_NAME} exec -i ${!name1_pod} -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"${!ip1_pod}\" \"${!ip2_pod}\" \"${!host1_pod}\" \"${!host2_pod}\" \"${!name1_pod}\" \"${!name2_pod}\" $ID_EXP"
-            elif [ "${!host1_pod}" != "${!host2_pod}" ] && $RUN_TEST_DIFF; then
-                if $RUN_TEST_CPU; then
-                    ${KITES_HOME}/scripts/linux/cpu-monitoring.sh "$N" "DIFFERENTNODES: ${!host1_pod//[$' ']/} TO ${!host2_pod//[$' ']/}" 10 $TCP_TEST
-                fi
-                kubectl -n ${KITES_NAMSPACE_NAME} exec -i ${!name1_pod} -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"${!ip1_pod}\" \"${!ip2_pod}\" \"${!host1_pod}\" \"${!host2_pod}\" \"${!name1_pod}\" \"${!name2_pod}\" $ID_EXP"
             fi
+            kubectl -n ${KITES_NAMSPACE_NAME} exec -i ${!name1_pod} -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"${!ip1_pod}\" \"${!ip2_pod}\" \"${!host1_pod}\" \"${!host2_pod}\" \"${!name1_pod}\" \"${!name2_pod}\" $ID_EXP"
         done
         if ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" = "${!host1_pod//[$' ']/}" ] && $RUN_TEST_SAMENODE) || ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" != "${!host1_pod//[$' ']/}" ] && $RUN_TEST_DIFF); then
             if $RUN_TEST_CPU; then
-                ${KITES_HOME}/scripts/linux/cpu-monitoring.sh "$N" "SINGLEPOD TO ${!name1_pod//[$' ']/}" 10 $TCP_TEST
+                start_cpu_monitor_nodes "$N" "SINGLEPOD TO ${!name1_pod//[$' ']/}" 10 $TCP_TEST
             fi
-            kubectl -n ${KITES_NAMSPACE_NAME} exec -i ${!name1_pod} -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"${!ip1_pod}\" \"$SINGLE_POD_IP\" \"${!host1_pod}\" \"$SINGLE_POD_HOSTNAME\" \"${!name1_pod}\" \"$SINGLE_POD_NAME\" $ID_EXP"
+
+            if [ "$RUN_IPV4_ONLY" == "true" ]; then
+                declare single_pod_ip="SINGLE_POD_IP"
+            elif [ "$RUN_IPV6_ONLY" == "true" ]; then
+                declare single_pod_ip="SINGLE_POD_IP6"
+            fi
+
+            kubectl -n ${KITES_NAMSPACE_NAME} exec -i ${!name1_pod} -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"${!ip1_pod}\" \"${!single_pod_ip}\" \"${!host1_pod}\" \"$SINGLE_POD_HOSTNAME\" \"${!name1_pod}\" \"$SINGLE_POD_NAME\" $ID_EXP"
         fi
     done
 }
@@ -241,7 +284,9 @@ function exec_net_test() {
 
         echo -e "TCP TEST NODES\n" >TCP_IPERF_NODE_OUTPUT.txt
         for ((minion_n = 1; minion_n <= "$N"; minion_n++)); do
-            sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@k8s-minion-"${minion_n}".k8s-play.local "${KITES_HOME}/scripts/linux/tcp-test-node.sh $ID_EXP $N"
+            declare node_ip="NODE_IP_$minion_n"
+            echo "${!node_ip}"
+            sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@k8s-minion-"${minion_n}".k8s-play.local "${KITES_HOME}/scripts/linux/tcp-test-node.sh $ID_EXP $N ${!node_ip}"
         done
     fi
 }
@@ -313,7 +358,6 @@ function print_all_setup_parameters() {
     log_debug " VERBOSITY_LEVEL=${VERBOSITY_LEVEL}"
 }
 
-##
 #   Parse arguments
 ##
 
@@ -331,6 +375,14 @@ while [ $# -gt 0 ]; do
         ;;
     --clean-all)
         CLEAN_ALL="true"
+        ;;
+    -4)
+        RUN_IPV4_ONLY="true"
+        RUN_IPV6_ONLY="false"
+        ;;
+    -6)
+        RUN_IPV4_ONLY="false"
+        RUN_IPV6_ONLY="true"
         ;;
     --test-type | -t)
 

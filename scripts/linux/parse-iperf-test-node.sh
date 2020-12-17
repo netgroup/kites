@@ -6,10 +6,10 @@ N=$3
 cd /vagrant/ext/kites/pod-shared/tests/$CNI
 # declare n_plus=$((N + 1))
 # declare comb=$n_plus*$N
-# declare end=$((comb - 1))
 comb=$(wc -l $iperf_input | awk '{ print $1 }')
+echo "comb = $comb"
 declare end=$((comb - 27))
-
+echo "end= $end"
 for (( X=0; X<=$end; X+=27))
 do
 VM_SRC=$(awk 'NR=='$X+3' { print $3}' < $iperf_input)
