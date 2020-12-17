@@ -10,7 +10,7 @@ echo "same $RUN_TEST_SAME same node $RUN_TEST_SAMENODE diff node $RUN_TEST_DIFF"
 if [ "$CNI" == "flannel" ]; then
    echo "TO BE CHECKED"
    echo "Obtaining MAC Addresses of the Nodes for $CNI..."
-   sudo apt install -y sshpass
+
    for (( minion_n=1; minion_n<=$N; minion_n++ ))
    do
       declare minion="POD_HOSTNAME_$minion_n"

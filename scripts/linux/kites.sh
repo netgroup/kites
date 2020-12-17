@@ -252,7 +252,6 @@ function exec_tcp_test_between_pods() {
             elif [ "$RUN_IPV6_ONLY" == "true" ]; then
                 declare single_pod_ip="SINGLE_POD_IP6"
             fi
-
             kubectl -n ${KITES_NAMSPACE_NAME} exec -i ${!name1_pod} -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"${!ip1_pod}\" \"${!single_pod_ip}\" \"${!host1_pod}\" \"$SINGLE_POD_HOSTNAME\" \"${!name1_pod}\" \"$SINGLE_POD_NAME\" $ID_EXP"
         fi
     done
@@ -285,8 +284,12 @@ function exec_net_test() {
         echo -e "TCP TEST NODES\n" >TCP_IPERF_NODE_OUTPUT.txt
         for ((minion_n = 1; minion_n <= "$N"; minion_n++)); do
             declare node_ip="NODE_IP_$minion_n"
-            echo "${!node_ip}"
-            sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@k8s-minion-"${minion_n}".k8s-play.local "${KITES_HOME}/scripts/linux/tcp-test-node.sh $ID_EXP $N ${!node_ip}"
+            if [ "$RUN_IPV4_ONLY" == "true" ]; then
+                declare version="4"
+            elif [ "$RUN_IPV6_ONLY" == "true" ]; then
+                declare version="6"
+            fi
+            sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@k8s-minion-"${minion_n}".k8s-play.local "${KITES_HOME}/scripts/linux/tcp-test-node.sh $ID_EXP $N ${!node_ip} $version"
         done
     fi
 }
