@@ -80,16 +80,22 @@ if [ "$CNI" == "flannel" ]; then
          for (( j=1; j<=$N; j++ ))
          do
             declare ip1_name="IP_$i"
+            echo "ip1_name = $ip1_name = ${!ip1_name}"
             declare ip2_name="IP_$j"
+            echo "ip2_name = $ip2_name = ${!ip2_name}"
             declare mac1_pod="MAC_ADDR_POD_$i"
+            echo "mac1_pod = $mac1_pod = ${!mac1_pod}"
             declare mac2_pod="MAC_ADDR_POD_$j"
-            declare mac1_minion="MAC_ADDR_MINON_$i"
-            declare mac2_minion="MAC_ADDR_MINON_$j"
+            echo "mac2_pod = $mac2_pod = ${!mac2_pod}"
+            declare mac1_minion="MAC_ADDR_MINION_$i"
+            echo "mac1_minion = $mac1_minion = ${!mac1_minion}"
+            declare mac2_minion="MAC_ADDR_MINION_$j"
+            echo "mac2_minion = $mac2_minion = ${!mac2_minion}"
             if [ "$i" -eq "$j" ]; then
                /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"${!mac1_pod}\"" "\"${!mac1_pod}\"" "\"${!ip1_name}\"" "\"${!ip2_name}\"" $byte samePod$i pod$i $CNI
             else
-               /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"${!mac1_pod}\"" "\"${!mac1_minion}\"" "\"${!ip1_name}\"" "\"${!ip2_name}\"" $byte pod${i}ToPod${j} pod$i $CNI
-               /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"${!mac2_pod}\"" "\"${!mac2_minion}\"" "\"${!ip2_name}\"" "\"${!ip1_name}\"" $byte pod${j}ToPod${i} pod$i $CNI
+               /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"${!mac1_pod}\"" "\"${!mac2_minion}\"" "\"${!ip1_name}\"" "\"${!ip2_name}\"" $byte pod${i}ToPod${j} pod$i $CNI
+               /vagrant/ext/kites/scripts/linux/create-udp-packets.sh "\"${!mac2_pod}\"" "\"${!mac1_minion}\"" "\"${!ip2_name}\"" "\"${!ip1_name}\"" $byte pod${j}ToPod${i} pod$i $CNI
             fi
          done
       done

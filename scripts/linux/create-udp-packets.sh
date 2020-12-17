@@ -1,12 +1,16 @@
 #!/bin/bash
 MAC_ADDR_POD_1=$1
+echo "MAC_ADDR_POD_1 = $MAC_ADDR_POD_1"
 MAC_ADDR_POD_2=$2
+echo "MAC_ADDR_POD_2 = $MAC_ADDR_POD_2"
 IP_ADDR_POD_1=$3
 IP_ADDR_POD_2=$4
 BYTE=$5
 BYTE_FILENAME=$5
 FILENAME=$6
+echo "$FILENAME"
 FOLDER=$7
+echo "$FOLDER"
 CNI=$8
 BASE_FOLDER=/vagrant/ext/kites/pod-shared
 NEW_MAC_ADDR_POD_1=$(sed -e "s/\"//g" <<< $MAC_ADDR_POD_1) 
@@ -14,8 +18,11 @@ NEW_MAC_ADDR_POD_1=$(sed -e "s/\"//g" <<< $MAC_ADDR_POD_1)
 
 if [ "$CNI" == "calicoIPIP" ] || [ "$CNI" == "calicoVXLAN" ]; then
    NEW_MAC_ADDR_POD_2="0xee, 0xee, 0xee, 0xee, 0xee, 0xee,"
+   echo "calico mac addr = $NEW_MAC_ADDR_POD_2"
 else
-   NEW_MAC_ADDR_POD_2=$(sed -e "s/\"//g" <<< $MAC_ADDR_POD_2) 
+   NEW_MAC_ADDR_POD_2=$(sed -e "s/\"//g" <<< $MAC_ADDR_POD_2)
+   NEW_MAC_ADDR_POD_2=$(sed -e "s/^ *//g" <<< $NEW_MAC_ADDR_POD_2)
+   echo "non calico mac addr = $NEW_MAC_ADDR_POD_2"
 fi
 TEMP_IP_ADDR_POD_1=$(sed -e "s/\r//g" <<< $IP_ADDR_POD_1)
 TEMP_IP_ADDR_POD_2=$(sed -e "s/\r//g" <<< $IP_ADDR_POD_2) 

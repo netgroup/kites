@@ -70,8 +70,8 @@ if $RUN_TEST_SAME || $RUN_TEST_DIFF; then
                 if $RUN_TEST_CPU; then
                     /vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "SAMEPOD: ${!name1_pod//[$' ']/}" 40 $CPU_TEST
                 fi
-                kubectl exec -i ${!name1_pod} -- bash -c "/vagrant/ext/kites/scripts/linux/netsniff-test.sh samePod$i-${BYTE}byte.pcap \"${!ip1_pod}\" \"${!ip1_pod}\" \"${!host1_pod}\" \"${!host1_pod}\" \"${!name1_pod}\" \"${!name1_pod}\" ${!folder1p_name} $BYTE $PPS $ID_EXP" & sleep 2 &&
-                kubectl exec -i ${!name1_pod} -- bash -c "/vagrant/ext/kites/scripts/linux/trafgen-test.sh samePod$i-${BYTE}byte.cfg \"${!ip1_pod}\" \"${!ip1_pod}\" \"${!host1_pod}\" \"${!host1_pod}\" \"${!name1_pod}\" \"${!name1_pod}\" ${!folder1p_name} $BYTE $PPS"
+                kubectl exec -i ${!name1_pod} -- bash -c "/vagrant/ext/kites/scripts/linux/netsniff-test.sh samePod${i}-${BYTE}byte.pcap \"${!ip1_pod}\" \"${!ip1_pod}\" \"${!host1_pod}\" \"${!host1_pod}\" \"${!name1_pod}\" \"${!name1_pod}\" ${!folder1p_name} $BYTE $PPS $ID_EXP" & sleep 2 &&
+                kubectl exec -i ${!name1_pod} -- bash -c "/vagrant/ext/kites/scripts/linux/trafgen-test.sh samePod${i}-${BYTE}byte.cfg \"${!ip1_pod}\" \"${!ip1_pod}\" \"${!host1_pod}\" \"${!host1_pod}\" \"${!name1_pod}\" \"${!name1_pod}\" ${!folder1p_name} $BYTE $PPS"
             elif [ "${!host1_pod}" != "${!host2_pod}" ] &&  $RUN_TEST_DIFF; then
                 echo "${!host1_pod} = ${!host2_pod}"
                 if $RUN_TEST_CPU; then
