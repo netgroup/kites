@@ -20,7 +20,7 @@ ID_EXP=exp-1
 #UDP TEST FOR PODS WITH NETSNIFF
 if $UDP_TEST
 then
-    for (( pps=10000; pps<=100000; pps+=10000 ))
+    for (( pps=10000; pps<=200000; pps+=50000 ))
     do
         /vagrant/ext/kites/scripts/linux/udp-test.sh $pps 1000 $ID_EXP $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
         /vagrant/ext/kites/scripts/linux/merge-udp-test.sh $pps 1000 $N
