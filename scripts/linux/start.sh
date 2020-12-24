@@ -1,4 +1,5 @@
 #!/bin/bash
+calc() { awk "BEGIN{ printf \"%.2f\n\", $* }"; }
 CNI=$1
 N=$2
 RUN_TEST_TCP="true"
@@ -79,7 +80,10 @@ fi
 /vagrant/ext/kites/scripts/linux/make-net-test.sh $N $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
 /vagrant/ext/kites/scripts/linux/parse-test.sh $CNI $N $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU
 end=`date +%s`
-echo "Execution time was $(expr $end - $start) seconds."
+exec_time=$(expr $end - $start)
+exec_min=$(calc $exec_time/60)
+echo "Execution time was $exec_min minutes ($exec_time seconds)."
+
 #echo -e "\n ### REMOVE FILE IN 5 MINUTES ### \n"
 #sleep 5m
 #/vagrant/ext/kites/scripts/linux/remove-all.sh
