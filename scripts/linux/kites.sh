@@ -269,7 +269,7 @@ function exec_net_test() {
     ID_EXP=exp-1 # TODO make it configurable
 
     if $UDP_TEST; then
-        for ((pps = 10000; pps <= 100000; pps += 10000)); do
+        for (( pps=10000; pps<=210000; pps+=20000 )); do
             ${KITES_HOME}/scripts/linux/udp-test.sh "$pps" 1000 "$ID_EXP" "$N" "$RUN_TEST_SAME" "$RUN_TEST_SAMENODE" "$RUN_TEST_DIFF" "$RUN_TEST_CPU"
             ${KITES_HOME}/scripts/linux/merge-udp-test.sh "$pps" 1000 "$N"
         done
@@ -314,7 +314,7 @@ function parse_test() {
         echo "OUTGOING, TX_TIME, VM_SRC, VM_DEST, POD_SRC, POD_DEST, PPS" >trafgen-tests.csv
 
         # CNI | Tipo di test | ID_EXP | PPS | From VM | To VM | From Pod | To Pod | From IP | To IP | Outgoing | Incoming | Passed | TX Time | RX Time | TIMESTAMP
-        for ((pps = 10000; pps <= 100000; pps += 10000)); do
+        for (( pps=10000; pps<=210000; pps+=20000 )); do
             ${KITES_HOME}/scripts/linux/parse-netsniff-test.sh "$CNI" ${KITES_HOME}/pod-shared/NETSNIFF-1000byte-${pps}pps.txt ${KITES_HOME}/pod-shared/TRAFGEN-1000byte-${pps}pps.txt "$N"
         done
 

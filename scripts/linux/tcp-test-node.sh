@@ -31,6 +31,5 @@ if [ "$V" == "4" ]; then
 else
    declare single_pod_ip="SINGLE_POD_IP6"
 fi
-echo ${!single_pod_ip}
 ${KITES_HOME}/scripts/linux/iperf-test-node.sh "$IP_HOSTNAME" ${!single_pod_ip} "$HOSTNAME" "$SINGLE_POD_HOSTNAME" "NO_POD" "$SINGLE_POD_NAME" "$ID_EXP"
 exit
