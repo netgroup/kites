@@ -16,7 +16,7 @@ if [ "$CNI" == "flannel" ]; then
       declare minion="POD_HOSTNAME_$minion_n"
       echo ${!minion}
       min_mac=$(sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@${!minion//[$' ']/}.k8s-play.local "/vagrant/ext/kites/scripts/linux/get-mac-address-cni-node.sh")
-      declare -x "MAC_ADDR_MINION_$minion_n= $min_mac"
+      declare -x "MAC_ADDR_MINION_$minion_n=$min_mac"
    done
    echo "Creating UDP Packet for DaemonSet..."
    for (( minion_n=1; minion_n<=$N; minion_n++ ))
@@ -35,8 +35,8 @@ if [ "$CNI" == "flannel" ]; then
             declare ip2_name="IP_$j"
             declare mac1_pod="MAC_ADDR_POD_$i"
             declare mac2_pod="MAC_ADDR_POD_$j"
-            declare mac1_minion="MAC_ADDR_MINON_$i"
-            declare mac2_minion="MAC_ADDR_MINON_$j"
+            declare mac1_minion="MAC_ADDR_MINION_$i"
+            declare mac2_minion="MAC_ADDR_MINION_$j"
             if [ "$i" -eq "$j" ]; then
                ${KITES_HOME}/scripts/linux/create-udp-packets.sh "\"${!mac1_pod}\"" "\"${!mac1_pod}\"" "\"${!ip1_name}\"" "\"${!ip2_name}\"" $byte samePod$i pod$i $CNI
             else
