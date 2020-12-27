@@ -9,7 +9,7 @@ IP_HOSTNAME=$3
 V=$4
 
 #Start Iperf3 TCP Test
-BASE_FOLDER=/vagrant/ext/kites/pod-shared
+BASE_FOLDER="${KITES_HOME}/pod-shared"
 cd $BASE_FOLDER
 set -a
 . ./pods_nodes.env

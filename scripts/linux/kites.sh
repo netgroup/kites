@@ -154,36 +154,36 @@ function get_pods_info() {
 
     log_debug "Obtaining the names, IPs, MAC Addresse of the SinglePOD."
     declare -xg "SINGLE_POD_NAME=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o jsonpath="{.items[0].metadata.name}")"
-    echo "SINGLE_POD_NAME="$SINGLE_POD_NAME"" >>${KITES_HOME}/pod-shared/pods_nodes.env
-    declare -xg "MAC_ADDR_SINGLE_POD=$(kubectl exec -n ${KITES_NAMSPACE_NAME} -i $SINGLE_POD_NAME -- bash -c "${KITES_HOME}/scripts/linux/single-pod-get-mac-address.sh")"
+    echo "SINGLE_POD_NAME=$SINGLE_POD_NAME" >>${KITES_HOME}/pod-shared/pods_nodes.env
+    declare -xg "MAC_ADDR_SINGLE_POD=$(kubectl exec -n ${KITES_NAMSPACE_NAME} -i "$SINGLE_POD_NAME" -- bash -c "${KITES_HOME}/scripts/linux/single-pod-get-mac-address.sh")"
     #echo "MAC_ADDR_SINGLE_POD="$MAC_ADDR_SINGLE_POD"">> ${KITES_HOME}/pod-shared/pods_nodes.env
     declare -xg "SINGLE_POD_IP=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o jsonpath="{.items[0].status.podIPs[0].ip}")"
     echo "SINGLE_POD_IP=$SINGLE_POD_IP" >>${KITES_HOME}/pod-shared/pods_nodes.env
     declare -xg "IP_PARSED_SINGLE_POD=$(sed -e "s/\./, /g" <<<${SINGLE_POD_IP})"
     #echo "IP_PARSED_SINGLE_POD="$IP_PARSED_SINGLE_POD"">> ${KITES_HOME}/pod-shared/pods_nodes.env
     declare -xg "SINGLE_POD_IP6=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o jsonpath="{.items[0].status.podIPs[1].ip}")"
-    echo "SINGLE_POD_IP6="$SINGLE_POD_IP6"" >>${KITES_HOME}/pod-shared/pods_nodes.env
+    echo "SINGLE_POD_IP6=$SINGLE_POD_IP6" >>${KITES_HOME}/pod-shared/pods_nodes.env
     declare -xg "SINGLE_POD_HOSTNAME=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o json | jq -r ".items[0].spec.nodeName")"
-    echo "SINGLE_POD_HOSTNAME="$SINGLE_POD_HOSTNAME"" >>${KITES_HOME}/pod-shared/pods_nodes.env
+    echo "SINGLE_POD_HOSTNAME=$SINGLE_POD_HOSTNAME" >>${KITES_HOME}/pod-shared/pods_nodes.env
 
     log_debug "Obtaining the names, IPs, MAC Addresse of  worker nodes."
     for row in $(kubectl get nodes --selector='!node-role.kubernetes.io/master' -o json | jq -r ".items[] | @base64"); do
         _jq() {
-            echo ${row} | base64 --decode | jq -r ${1}
+            echo "${row}" | base64 --decode | jq -r "${1}"
         }
         log_debug "Obtaining node name. node number $node_index."
         declare -xg "NODE_NAME_$node_index"=$(_jq '.metadata.name')
         declare node_name=NODE_NAME_$node_index
-        echo "NODE_NAME_"$node_index"="${!node_name}"" >>${KITES_HOME}/pod-shared/pods_nodes.env
+        echo "NODE_NAME_$node_index=${!node_name}" >>${KITES_HOME}/pod-shared/pods_nodes.env
 
         for addr in $(kubectl get nodes ${!node_name} -o json | jq -r ".status.addresses[] | @base64"); do
             _jqa() {
-                echo ${addr} | base64 --decode | jq -r ${1}
+                echo "${addr}" | base64 --decode | jq -r "${1}"
             }
             if [ "$(_jqa '.type')" == "InternalIP" ]; then
                 declare -xg "NODE_IP_$node_index"="$(_jqa '.address')"
                 declare node_ip=NODE_IP_$node_index
-                echo "NODE_IP_$node_index="${!node_ip}"" >>${KITES_HOME}/pod-shared/pods_nodes.env
+                echo "NODE_IP_$node_index=${!node_ip}" >>${KITES_HOME}/pod-shared/pods_nodes.env
             fi
         done
 
