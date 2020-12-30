@@ -6,6 +6,9 @@ RUN_TEST_SAME=$4
 RUN_TEST_SAMENODE=$5
 RUN_TEST_DIFF=$6
 RUN_TEST_CPU=$7
+shift 7
+bytes=("$@")
+
 
 if [ -d "/vagrant/ext/kites/pod-shared/" ] 
 then
@@ -20,10 +23,17 @@ ID_EXP=exp-1
 #UDP TEST FOR PODS WITH NETSNIFF
 if $UDP_TEST
 then
-    for (( pps=10000; pps<=210000; pps+=20000 ))
+    # bytes=(100 1000)
+    for byte in "${bytes[@]}"
     do
-        /vagrant/ext/kites/scripts/linux/udp-test.sh $pps 1000 $ID_EXP $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
-        /vagrant/ext/kites/scripts/linux/merge-udp-test.sh $pps 1000 $N
+        for (( pps=29800; pps<=30300; pps+=100 )) #TEST PPS!
+        do
+            echo -e "\n____________________________________________________\n"
+            echo -e "TRAFFIC LOAD: ${pps}pps                          |"
+            echo -e "____________________________________________________\n\n"
+            /vagrant/ext/kites/scripts/linux/udp-test.sh $pps $byte $ID_EXP $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
+            /vagrant/ext/kites/scripts/linux/merge-udp-test.sh $pps $byte $N
+        done
     done
 fi
 

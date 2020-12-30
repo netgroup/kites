@@ -2,6 +2,7 @@
 calc() { awk "BEGIN{ printf \"%.2f\n\", $* }"; }
 CNI=$1
 N=$2
+bytes=(1000)
 RUN_TEST_TCP="true"
 RUN_TEST_UDP="true"
 RUN_TEST_SAME="true"
@@ -66,7 +67,16 @@ do
 			echo "cpu monitoring won't be performed"
 			echo "RUN_TEST_CPU=$RUN_TEST_CPU"
 		;;
-		
+		--bytes|-b)
+        	shift
+            k=0
+			for i in $(awk '{gsub(/,/," ");print}' <<< "$1")
+			do
+                bytes[$k]=$i
+                k=$((k + 1))
+			done
+			echo "Bytes for the packets considered will be: ${bytes[@]} bytes"
+        ;;	
     esac
     shift
 done
@@ -74,15 +84,17 @@ done
 start=`date +%s`
 sudo apt install -y sshpass
 if $RUN_TEST_CPU; then
-	/vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "IDLE" 10 "IDLE"
+	/vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "IDLE" 10 "IDLE" "no_pkt" "START" &
+	sleep 10
+	/vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "IDLE" 10 "IDLE" "no_pkt" "STOP"
 fi
-/vagrant/ext/kites/scripts/linux/initialize-net-test.sh $CNI $N $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF
-/vagrant/ext/kites/scripts/linux/make-net-test.sh $N $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
-/vagrant/ext/kites/scripts/linux/parse-test.sh $CNI $N $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU
+/vagrant/ext/kites/scripts/linux/initialize-net-test.sh $CNI $N $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF "${bytes[@]}"
+/vagrant/ext/kites/scripts/linux/make-net-test.sh $N $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU "${bytes[@]}"
+/vagrant/ext/kites/scripts/linux/parse-test.sh $CNI $N $RUN_TEST_TCP $RUN_TEST_UDP "${bytes[@]}"
 end=`date +%s`
 exec_time=$(expr $end - $start)
 exec_min=$(calc $exec_time/60)
-echo "Execution time was $exec_min minutes ($exec_time seconds)."
+echo "Execution time was $exec_min minutes, $exec_time seconds."
 
 #echo -e "\n ### REMOVE FILE IN 5 MINUTES ### \n"
 #sleep 5m
