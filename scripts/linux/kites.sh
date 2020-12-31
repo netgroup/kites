@@ -43,6 +43,7 @@ CLEAN_ALL="false"
 IPv6DualStack="false"
 RUN_IPV4_ONLY="true"
 RUN_IPV6_ONLY="false"
+PKT_BYTES=(100 1000)
 VERBOSITY_LEVEL=5 # default debug level. see in utils/logging.sh
 
 ##
@@ -142,7 +143,7 @@ function get_pods_info() {
         log_debug "Obtaining pod nodeName. pod number $pod_index."
         declare -xg "POD_HOSTNAME_$pod_index=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test" -o json | jq -r ".items[$pod_index-1].spec.nodeName")"
         declare pod_hostname=POD_HOSTNAME_$pod_index
-        echo "POD_HOSTNAME_$pod_index=${!pod_hostname}">> ${KITES_HOME}/pod-shared/pods_nodes.env
+        echo "POD_HOSTNAME_$pod_index=${!pod_hostname}" >>${KITES_HOME}/pod-shared/pods_nodes.env
         log_debug "Obtaining pod MAC. pod number $pod_index."
         declare pod_name=POD_NAME_$pod_index
         mac_pod=$(kubectl -n ${KITES_NAMSPACE_NAME} exec -i "${!pod_name}" -- bash -c "${KITES_HOME}/scripts/linux/get-mac-address-pod.sh")
@@ -201,12 +202,15 @@ function initialize_net_test() {
     RUN_TEST_SAMENODE=$5
     RUN_TEST_DIFF=$6
 
+    shift
+    PKT_BYTES=("$@")
+
     initialize_pods "$RUN_TEST_SAMENODE"
     create_pod_list
     get_pods_info
     if $RUN_TEST_UDP; then
         # TODO refactoring this script
-        ${KITES_HOME}/scripts/linux/create-udp-traffic.sh $CNI $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF
+        ${KITES_HOME}/scripts/linux/create-udp-traffic.sh "$CNI" "$N" "$RUN_TEST_SAME" "$RUN_TEST_SAMENODE" "$RUN_TEST_DIFF" "${PKT_BYTES[@]}"
     fi
 }
 
@@ -266,12 +270,19 @@ function exec_net_test() {
     RUN_TEST_SAMENODE=$5
     RUN_TEST_DIFF=$6
     RUN_TEST_CPU=$7
+    shift 7
+    bytes=("$@")
     ID_EXP=exp-1 # TODO make it configurable
 
     if $UDP_TEST; then
-        for (( pps=10000; pps<=210000; pps+=20000 )); do
-            ${KITES_HOME}/scripts/linux/udp-test.sh "$pps" 1000 "$ID_EXP" "$N" "$RUN_TEST_SAME" "$RUN_TEST_SAMENODE" "$RUN_TEST_DIFF" "$RUN_TEST_CPU"
-            ${KITES_HOME}/scripts/linux/merge-udp-test.sh "$pps" 1000 "$N"
+        for byte in "${bytes[@]}"; do
+            for ((pps = 29800; pps <= 30300; pps += 100)); do #TEST PPS!
+                log_debug "\n____________________________________________________\n"
+                log_debug "TRAFFIC LOAD: ${pps}pps                          |"
+                log_debug "____________________________________________________\n\n"
+                ${KITES_HOME}/scripts/linux/udp-test.sh $pps $byte $ID_EXP $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
+                ${KITES_HOME}/scripts/linux/merge-udp-test.sh $pps $byte $N
+            done
         done
     fi
 
@@ -301,6 +312,9 @@ function parse_test() {
     TCP_TEST=$3
     UDP_TEST=$4
 
+    shift
+    bytes=("$@")
+
     if [ ! -d "${KITES_HOME}/pod-shared/tests/$CNI" ]; then
         log_debug "Directory ${KITES_HOME}/pod-shared/tests/$CNI doesn't exists."
         log_debug "Creating: Directory ${KITES_HOME}/pod-shared/tests/$CNI"
@@ -314,12 +328,16 @@ function parse_test() {
         echo "OUTGOING, TX_TIME, VM_SRC, VM_DEST, POD_SRC, POD_DEST, PPS" >trafgen-tests.csv
 
         # CNI | Tipo di test | ID_EXP | PPS | From VM | To VM | From Pod | To Pod | From IP | To IP | Outgoing | Incoming | Passed | TX Time | RX Time | TIMESTAMP
-        for (( pps=10000; pps<=210000; pps+=20000 )); do
-            ${KITES_HOME}/scripts/linux/parse-netsniff-test.sh "$CNI" ${KITES_HOME}/pod-shared/NETSNIFF-1000byte-${pps}pps.txt ${KITES_HOME}/pod-shared/TRAFGEN-1000byte-${pps}pps.txt "$N"
+        for byte in "${bytes[@]}"; do
+            for ((pps = 16800; pps <= 19200; pps += 100)); do
+                ${KITES_HOME}/scripts/linux/parse-netsniff-test.sh "$CNI" ${KITES_HOME}/pod-shared/NETSNIFF-${byte}byte-${pps}pps.txt ${KITES_HOME}/pod-shared/TRAFGEN-${byte}byte-${pps}pps.txt "$N"
+            done
         done
 
-        ${KITES_HOME}/scripts/linux/compute-udp-results.sh netsniff-tests.csv
-        ${KITES_HOME}/scripts/linux/compute-udp-throughput.sh udp_results.csv
+        ${KITES_HOME}/scripts/linux/compute-udp-results.sh netsniff-tests.csv "$CNI" "${bytes[@]}"
+        for byte in "${bytes[@]}"; do
+            ${KITES_HOME}/scripts/linux/compute-udp-throughput.sh udp_results_${CNI}_${byte}bytes.csv $CNI $byte
+        done
     fi
 
     if $TCP_TEST; then
@@ -358,6 +376,7 @@ function print_all_setup_parameters() {
     log_debug " IPv6DualStack=${IPv6DualStack}"
     log_debug " RUN_IPV4_ONLY=${RUN_IPV4_ONLY}"
     log_debug " RUN_IPV6_ONLY=${RUN_IPV6_ONLY}"
+    log_debug " PKT_BYTES=${PKT_BYTES[*]}"
     log_debug " VERBOSITY_LEVEL=${VERBOSITY_LEVEL}"
 }
 
@@ -457,15 +476,18 @@ start=$(date +%s)
 log_inf "KITES start."
 
 if $RUN_TEST_CPU; then
-    start_cpu_monitor_nodes "$N" "IDLE" 10 "IDLE"
+# TO CHECK
+    start_cpu_monitor_nodes $N "IDLE" 10 "IDLE" "no_pkt" "START" &
+	sleep 10
+	start_cpu_monitor_nodes $N "IDLE" 10 "IDLE" "no_pkt" "STOP"
 fi
 
 create_name_space
 
-initialize_net_test "$CNI" "$N" $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF
+initialize_net_test "$CNI" "$N" $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF "${PKT_BYTES[@]}"
 
 exec_net_test "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
-parse_test "$CNI" "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU
+parse_test "$CNI" "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU "${PKT_BYTES[@]}"
 
 end=$(date +%s)
 log_inf "KITES stop. Execution time was $(expr "$end" - "$start") seconds."

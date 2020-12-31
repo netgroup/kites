@@ -4,11 +4,11 @@ N=$2
 RUN_TEST_SAME=$3
 RUN_TEST_SAMENODE=$4
 RUN_TEST_DIFF=$5
-echo "same $RUN_TEST_SAME same node $RUN_TEST_SAMENODE diff node $RUN_TEST_DIFF"
+shift 5
+bytes=("$@")
 
 
 if [ "$CNI" == "flannel" ]; then
-   echo "TO BE CHECKED"
    echo "Obtaining MAC Addresses of the Nodes for $CNI..."
 
    for (( minion_n=1; minion_n<=$N; minion_n++ ))
@@ -23,10 +23,9 @@ if [ "$CNI" == "flannel" ]; then
    do
       export IP_$minion_n MAC_ADDR_POD_$minion_n MAC_ADDR_MINION_$minion_n
    done
-   bytes=(100 1000)
    for byte in "${bytes[@]}"
    do
-      echo "$byte bytes"
+      echo "Creating UDP packets with size: $byte bytes"
       for (( i=1; i<=$N; i++ ))
       do
          for (( j=1; j<=$N; j++ ))
@@ -47,17 +46,13 @@ if [ "$CNI" == "flannel" ]; then
       done
    done
    echo "Creating UDP Packets for Single Pod..."
-   ${KITES_HOME}/scripts/linux/single-pod-create-udp-traffic-flannel.sh $CNI $N
+   ${KITES_HOME}s/scripts/linux/single-pod-create-udp-traffic-flannel.sh $CNI $N "${bytes[@]}"
 else
    echo "Creating UDP Packet for DaemonSet..."
-   # for (( minion_n=1; minion_n<=$N; minion_n++ ))
-   # do
-   #    export IP_$minion_n MAC_ADDR_POD_$minion_n POD_HOSTNAME_$minion_n
-   # done
-   bytes=(100 1000)
+   
    for byte in "${bytes[@]}"
    do
-      echo "$byte bytes"
+      echo "Creating UDP packets with size: $byte bytes"
       for (( i=1; i<=$N; i++ ))
       do
          for (( j=1; j<=$N; j++ ))
@@ -81,6 +76,6 @@ else
    done
    if $RUN_TEST_SAMENODE; then
       echo "Creating Single POD and UDP Packet for this..."
-      ${KITES_HOME}/scripts/linux/single-pod-create-udp-traffic.sh $CNI $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF
+      ${KITES_HOME}/scripts/linux/single-pod-create-udp-traffic.sh "$CNI" "$N" "$RUN_TEST_SAME" "$RUN_TEST_SAMENODE" "$RUN_TEST_DIFF" "${bytes[@]}"
    fi
 fi

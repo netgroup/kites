@@ -2,14 +2,15 @@
 ## Get Hostname, MAC Address and IP for single POD
 CNI=$1
 N=$2
+shift 2
+bytes=("$@")
+
 POD=$(kubectl get pod -l app=net-test-single-pod -o jsonpath="{.items[0].metadata.name}" -n ${KITES_NAMSPACE_NAME})
 MAC_ADDR_SINGLE_POD=$(kubectl exec -i $POD -- bash -c "vagrant/ext/kites/scripts/linux/single-pod-get-mac-address.sh" -n ${KITES_NAMSPACE_NAME})
 IP_PARSED_SINGLE_POD=$(kubectl exec -i $POD -- bash -c "vagrant/ext/kites/scripts/linux/single-pod-get-ip.sh" -n ${KITES_NAMSPACE_NAME})
 
-echo "bisogna controllare che questo single-pod-create-udp-traffic-flannel.sh funzioni"
 
 echo "Creating UDP Packets for single POD" 
-
 for (( minion_n=1; minion_n<=$N; minion_n++ ))
 do
    declare n_plus=$((minion_n + 1))
@@ -17,16 +18,15 @@ do
    declare -x "MINION_$minion_n= $host_pod"
 done
 MINION_SINGLE_POD=$(awk 'NR=='$((N + 2))' { print $3}' podNameAndIP.txt)
-echo "l'host del single pod è $MINION_SINGLE_POD"
 
 for (( minion_n=1; minion_n<=$N; minion_n++ ))
 do
     declare hostname="MINION_$minion_n"
     if [ "${!hostname//[$' ']/}" = "$MINION_SINGLE_POD" ]; then
-        bytes=(100 1000)
+        # bytes=(100 1000)
         for byte in "${bytes[@]}"
         do
-            echo "allora creo il traffico per $byte bytes"
+            echo "Creating UDP packets with size: $byte bytes"
             bash /vagrant/ext/kites/scripts/linux/single-pod-create-udp-packets.sh "\"$MAC_ADDR_SINGLE_POD\"" "\"$MAC_ADDR_SINGLE_POD\"" "\"$IP_PARSED_SINGLE_POD\"" "\"$IP_PARSED_SINGLE_POD\"" $byte singlePodToSinglePod single-pod $CNI
             for (( j=1; j<=$N; j++ ))
             do
