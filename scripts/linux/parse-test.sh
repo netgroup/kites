@@ -24,13 +24,13 @@ then
     # bytes=(100 1000)
     for byte in "${bytes[@]}"
     do
-        for (( pps=16800; pps<=19200; pps+=100 ))
+        for (( pps=17600; pps<=19000; pps+=200 ))
         do
             /vagrant/ext/kites/scripts/linux/parse-netsniff-test.sh $CNI /vagrant/ext/kites/pod-shared/NETSNIFF-${byte}byte-${pps}pps.txt /vagrant/ext/kites/pod-shared/TRAFGEN-${byte}byte-${pps}pps.txt $N
         done
     done
     
-    /vagrant/ext/kites/scripts/linux/compute-udp-results.sh netsniff-tests.csv $CNI ${bytes[@]}
+    /vagrant/ext/kites/scripts/linux/compute-udp-results.sh netsniff-tests.csv $CNI "${bytes[@]}"
     for byte in "${bytes[@]}"
     do
         /vagrant/ext/kites/scripts/linux/compute-udp-throughput.sh udp_results_${CNI}_${byte}bytes.csv $CNI $byte

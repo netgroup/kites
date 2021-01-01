@@ -84,9 +84,9 @@ done
 start=`date +%s`
 sudo apt install -y sshpass
 if $RUN_TEST_CPU; then
-	/vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "IDLE" 10 "IDLE" "no_pkt" "START" &
+	/vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "IDLE" "-" "IDLE" "no_node" "no_pkt" "no_pps" "START" &
 	sleep 10
-	/vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "IDLE" 10 "IDLE" "no_pkt" "STOP"
+	/vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "IDLE" "-" "IDLE" "no_node" "no_pkt" "no_pps" "STOP"
 fi
 /vagrant/ext/kites/scripts/linux/initialize-net-test.sh $CNI $N $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF "${bytes[@]}"
 /vagrant/ext/kites/scripts/linux/make-net-test.sh $N $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU "${bytes[@]}"

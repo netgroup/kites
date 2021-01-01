@@ -15,7 +15,7 @@ IFS=','
 for byte in "${bytes[@]}"
 do
     awk -F"," '$4=='$byte'' $INPUT > bytetemp.csv
-    for (( pps=16800; pps<=19200; pps+=100 ))
+    for (( pps=17600; pps<=19000; pps+=200 ))
     do
         echo $pps
         awk -F"," '$5=='$pps'' bytetemp.csv > temp.csv

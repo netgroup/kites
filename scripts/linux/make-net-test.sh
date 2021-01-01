@@ -26,7 +26,7 @@ then
     # bytes=(100 1000)
     for byte in "${bytes[@]}"
     do
-        for (( pps=29800; pps<=30300; pps+=100 )) #TEST PPS!
+        for (( pps=17600; pps<=19000; pps+=200 )) #TEST PPS!
         do
             echo -e "\n____________________________________________________\n"
             echo -e "TRAFFIC LOAD: ${pps}pps                          |"
