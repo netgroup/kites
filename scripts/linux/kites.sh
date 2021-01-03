@@ -17,9 +17,9 @@ function display_usage() {
     echo "  --conf              : set the configuration between: all, samepod, samenode, diffnode. Default set =all"
     echo "  --clean-all         : remove all experiment data and pods already created."
     echo "  --namespace | -n    : set the namespace name. Default set =kites"
-    #echo "  --dual-stack        : use IPv4 and IPv6 if enabled."
-    echo "  -4                  : use IPv4 only."
+    echo "  -4                  : use IPv4 only. Default."
     echo "  -6                  : use IPv6 only."
+    echo "  --bytes | -b        : set a list comma separated of bytes. Example: 100,1000. Default 100."
     echo "  -h                  : display this help message"
 }
 
@@ -43,7 +43,10 @@ CLEAN_ALL="false"
 IPv6DualStack="false"
 RUN_IPV4_ONLY="true"
 RUN_IPV6_ONLY="false"
-PKT_BYTES=(100 1000)
+PKT_BYTES=(100)
+PPS_MIN=17600
+PPS_MAX=19000
+PPS_INC=200
 VERBOSITY_LEVEL=5 # default debug level. see in utils/logging.sh
 
 ##
@@ -202,9 +205,8 @@ function initialize_net_test() {
     RUN_TEST_SAMENODE=$5
     RUN_TEST_DIFF=$6
 
-    shift
+    shift 6
     PKT_BYTES=("$@")
-
     initialize_pods "$RUN_TEST_SAMENODE"
     create_pod_list
     get_pods_info
@@ -273,13 +275,15 @@ function exec_net_test() {
     shift 7
     bytes=("$@")
     ID_EXP=exp-1 # TODO make it configurable
-
+    log_debug "${bytes[*]}"
     if $UDP_TEST; then
+        log_debug "UDP TEST"
         for byte in "${bytes[@]}"; do
-            for ((pps = 29800; pps <= 30300; pps += 100)); do #TEST PPS!
-                log_debug "\n____________________________________________________\n"
-                log_debug "TRAFFIC LOAD: ${pps}pps                          |"
-                log_debug "____________________________________________________\n\n"
+            log_debug "$byte $PPS_MIN $PPS_MAX $PPS_INC $pps"
+            for ((pps=$PPS_MIN; pps<=$PPS_MAX; pps+=$PPS_INC)); do
+                log_debug "____________________________________________________"
+                log_debug "TRAFFIC LOAD: ${pps}pps "
+                log_debug "____________________________________________________"
                 ${KITES_HOME}/scripts/linux/udp-test.sh $pps $byte $ID_EXP $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
                 ${KITES_HOME}/scripts/linux/merge-udp-test.sh $pps $byte $N
             done
@@ -311,9 +315,11 @@ function parse_test() {
     N=$2
     TCP_TEST=$3
     UDP_TEST=$4
+    CPU_TEST=$5
 
-    shift
+    shift 5
     bytes=("$@")
+    log_debug "${bytes[@]}"
 
     if [ ! -d "${KITES_HOME}/pod-shared/tests/$CNI" ]; then
         log_debug "Directory ${KITES_HOME}/pod-shared/tests/$CNI doesn't exists."
@@ -329,7 +335,7 @@ function parse_test() {
 
         # CNI | Tipo di test | ID_EXP | PPS | From VM | To VM | From Pod | To Pod | From IP | To IP | Outgoing | Incoming | Passed | TX Time | RX Time | TIMESTAMP
         for byte in "${bytes[@]}"; do
-            for ((pps = 16800; pps <= 19200; pps += 100)); do
+            for ((pps=${PPS_MIN}; pps<=${PPS_MAX}; pps+=${PPS_INC})); do
                 ${KITES_HOME}/scripts/linux/parse-netsniff-test.sh "$CNI" ${KITES_HOME}/pod-shared/NETSNIFF-${byte}byte-${pps}pps.txt ${KITES_HOME}/pod-shared/TRAFGEN-${byte}byte-${pps}pps.txt "$N"
             done
         done
@@ -454,6 +460,16 @@ while [ $# -gt 0 ]; do
     --nocpu | -nc)
         RUN_TEST_CPU="false"
         ;;
+    --bytes | -b)
+        shift
+        k=0
+        for i in $(awk '{gsub(/,/," ");print}' <<<"$1"); do
+            bytes[$k]=$i
+            k=$((k + 1))
+        done
+        PKT_BYTES=${bytes[@]}
+        ;;
+
     --help | -h)
         display_usage && exit
         ;;
@@ -476,17 +492,17 @@ start=$(date +%s)
 log_inf "KITES start."
 
 if $RUN_TEST_CPU; then
-# TO CHECK
+    # TO CHECK
     start_cpu_monitor_nodes $N "IDLE" 10 "IDLE" "no_pkt" "START" &
-	sleep 10
-	start_cpu_monitor_nodes $N "IDLE" 10 "IDLE" "no_pkt" "STOP"
+    sleep 10
+    start_cpu_monitor_nodes $N "IDLE" 10 "IDLE" "no_pkt" "STOP"
 fi
 
 create_name_space
 
 initialize_net_test "$CNI" "$N" $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF "${PKT_BYTES[@]}"
 
-exec_net_test "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
+exec_net_test "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU "${PKT_BYTES[@]}"
 parse_test "$CNI" "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU "${PKT_BYTES[@]}"
 
 end=$(date +%s)
