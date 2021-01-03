@@ -280,7 +280,7 @@ function exec_net_test() {
         log_debug "UDP TEST"
         for byte in "${bytes[@]}"; do
             log_debug "$byte $PPS_MIN $PPS_MAX $PPS_INC $pps"
-            for ((pps=$PPS_MIN; pps<=$PPS_MAX; pps+=$PPS_INC)); do
+            for ((pps = $PPS_MIN; pps <= $PPS_MAX; pps += $PPS_INC)); do
                 log_debug "____________________________________________________"
                 log_debug "TRAFFIC LOAD: ${pps}pps "
                 log_debug "____________________________________________________"
@@ -335,14 +335,15 @@ function parse_test() {
 
         # CNI | Tipo di test | ID_EXP | PPS | From VM | To VM | From Pod | To Pod | From IP | To IP | Outgoing | Incoming | Passed | TX Time | RX Time | TIMESTAMP
         for byte in "${bytes[@]}"; do
-            for ((pps=${PPS_MIN}; pps<=${PPS_MAX}; pps+=${PPS_INC})); do
+            for ((pps = ${PPS_MIN}; pps <= ${PPS_MAX}; pps += ${PPS_INC})); do
                 ${KITES_HOME}/scripts/linux/parse-netsniff-test.sh "$CNI" ${KITES_HOME}/pod-shared/NETSNIFF-${byte}byte-${pps}pps.txt ${KITES_HOME}/pod-shared/TRAFGEN-${byte}byte-${pps}pps.txt "$N"
             done
         done
 
-        ${KITES_HOME}/scripts/linux/compute-udp-results.sh netsniff-tests.csv "$CNI" "${bytes[@]}"
+        #${KITES_HOME}/scripts/linux/compute-udp-results.sh netsniff-tests.csv "$CNI" "${bytes[@]}"
         for byte in "${bytes[@]}"; do
-            ${KITES_HOME}/scripts/linux/compute-udp-throughput.sh udp_results_${CNI}_${byte}bytes.csv $CNI $byte
+            compute_udp_result netsniff-tests.csv "$CNI" $byte
+            compute_udp_throughput udp_results_${CNI}_${byte}bytes.csv $CNI $byte
         done
     fi
 
@@ -367,6 +368,86 @@ function parse_test() {
 
 }
 
+function compute_udp_throughput() {
+    log_debug "Compute UDP Throughput, CNI $2 - byte $3."
+    INPUT=$1
+    CNI=$2
+    byte=$3
+    [ ! -f $INPUT ] && {
+        log_debug "$INPUT file not found"
+        return
+    }
+
+    echo "BYTE, PPS, CONFIG_CODE, CONFIG, RX/TX, TXED/TOTX, PacketRate" >udp_throughput_${CNI}_${byte}bytes.csv
+
+    configs_names=("SamePod" "PodsOnSameNode" "PodsOnDiffNode")
+    configs=("0" "1" "2")
+    for config in "${configs[@]}"; do
+        echo "for ${configs_names[$config]} ($config)"
+        awk -F, '$3=='$config'' $INPUT >temp${configs_names[$config]}.csv
+
+        #this takes the packet rate with the MAXIMUM rx/tx
+        #awk -F, 'NR==1{s=m=$4}{a[$4]=$0;m=($4>m)?$4:m;s=($4<s)?$4:s}END{print a[m]}' temp${configs_names[$config]}.csv >> udp_throughput_max.csv
+
+        #this takes the maximum packet rate which guarantees a rx/tx>0.95
+        awk -F, '$5 > 0.95' temp${configs_names[$config]}.csv >temp.csv
+        sort -k4 temp.csv >sortedtemp.csv
+        awk -F, 'NR==1{s=m=$7}{a[$7]=$0;m=($7>m)?$7:m;s=($7<s)?$7:s}END{print a[m]}' sortedtemp.csv >>udp_throughput_${CNI}_${byte}bytes.csv
+        rm temp${configs_names[$config]}.csv
+        rm sortedtemp.csv
+        rm temp.csv
+    done
+}
+
+function compute_udp_result() {
+    calc() { awk "BEGIN{ printf \"%.2f\n\", $* }"; }
+    INPUT=$1
+    CNI=$2
+    byte=$3
+    IFS=','
+
+    [ ! -f $INPUT ] && {
+        echo "$INPUT file not found"
+        exit 99
+    }
+    echo "BYTE, PPS, CONFIG_CODE, CONFIG, RX/TX, TXED/TOTX, PacketRate" >udp_results_${CNI}_${byte}bytes.csv
+
+    awk -F"," '$4=='$byte'' $INPUT >bytetemp.csv
+    for ((pps = $PPS_MIN; pps <= $PPS_MAX; pps += $PPS_INC)); do
+        awk -F"," '$5=='$pps'' bytetemp.csv >temp.csv
+        configs_names=("SamePod" "PodsOnSameNode" "PodsOnDiffNode")
+        configs=("0" "1" "2")
+        for config in "${configs[@]}"; do
+            awk -F, '$19=='$config'' temp.csv >temp${configs_names[$config]}.csv
+            incoming_tot=0
+            outgoing_tot=0
+            n=0
+            while read cni test_type id_exp byte_n pps_n source_vm dest_vm source_pod dest_pod source_ip dest_ip outgoing incoming passed tx_time rx_time timestamp; do
+                incoming_tot=$((incoming + incoming_tot))
+                #echo "i have $incoming incoming packets. Total: $incoming_tot"
+                outgoing_tot=$((outgoing + outgoing_tot))
+                #echo "i have $outgoing outgoing packets. Total: $outgoing_tot"
+                n=$((n + 1))
+                #echo $n
+            done <temp${configs_names[$config]}.csv
+            incoming_avg=$(calc $incoming_tot/$n)
+            outgoing_avg=$(calc $outgoing_tot/$n)
+            # echo "avg_inc $incoming_avg"
+            # echo "avg_out $outgoing_avg"
+            rxtx_ratio=$(calc $incoming_avg/$outgoing_avg)
+            totxpkt=$((pps * 10))
+            txedtx_ratio=$(calc $outgoing_avg/$totxpkt)
+            real_pktrate=$(calc $totxpkt*$txedtx_ratio)
+            # echo "real_pktrate $real_pktrate"
+            echo "$byte, $pps, $config, ${configs_names[$config]}, $rxtx_ratio, $txedtx_ratio, $real_pktrate" >>udp_results_${CNI}_${byte}bytes.csv
+            rm temp${configs_names[$config]}.csv
+        done
+        rm temp.csv
+    done
+    rm bytetemp.csv
+
+}
+
 function print_all_setup_parameters() {
     log_debug "Setup parameters:"
     log_debug " KITES_HOME=${KITES_HOME}"
@@ -379,10 +460,12 @@ function print_all_setup_parameters() {
     log_debug " RUN_TEST_DIFF=${RUN_TEST_DIFF}"
     log_debug " RUN_TEST_CPU=${RUN_TEST_CPU}"
     log_debug " CLEAN_ALL=${CLEAN_ALL}"
-    log_debug " IPv6DualStack=${IPv6DualStack}"
     log_debug " RUN_IPV4_ONLY=${RUN_IPV4_ONLY}"
     log_debug " RUN_IPV6_ONLY=${RUN_IPV6_ONLY}"
     log_debug " PKT_BYTES=${PKT_BYTES[*]}"
+    log_debug " PPS_MIN=${PPS_MIN}"
+    log_debug " PPS_MAX=${PPS_MAX}"
+    log_debug " PPS_INC=${PPS_INC}"
     log_debug " VERBOSITY_LEVEL=${VERBOSITY_LEVEL}"
 }
 
