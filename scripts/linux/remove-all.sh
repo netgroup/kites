@@ -5,7 +5,7 @@ if [ -d "/vagrant/ext/kites/pod-shared/" ]
 then
 	cd /vagrant/ext/kites/pod-shared
 	rm -rf *
-	echo "removed"
+	echo "pod-shared cleaned"
 else
     : 																																	
 fi

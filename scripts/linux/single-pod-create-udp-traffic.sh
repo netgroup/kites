@@ -8,18 +8,19 @@ RUN_TEST_DIFF=$5
 shift 5
 bytes=("$@")
 
-echo "diff nodes? $RUN_TEST_DIFF"
 POD=$(kubectl get pod -l app=net-test-single-pod -o jsonpath="{.items[0].metadata.name}")
 MAC_ADDR_SINGLE_POD=$(kubectl exec -i $POD -- bash -c "vagrant/ext/kites/scripts/linux/single-pod-get-mac-address.sh")
 IP_PARSED_SINGLE_POD=$(kubectl exec -i $POD -- bash -c "vagrant/ext/kites/scripts/linux/single-pod-get-ip.sh")
 single_pod_vm=$(awk 'NR=='$((N + 2))' { print $3}' podNameAndIP.txt)
 
-echo "Creating UDP Packets for single POD" 
+echo "Creating UDP Packets for single POD"
 if $RUN_TEST_SAME; then
-	bash /vagrant/ext/kites/scripts/linux/single-pod-create-udp-packets.sh "\"$MAC_ADDR_SINGLE_POD\"" "\"$MAC_ADDR_SINGLE_POD\"" "\"$IP_PARSED_SINGLE_POD\"" "\"$IP_PARSED_SINGLE_POD\"" 100 singlePodToSinglePod single-pod $CNI
-	bash /vagrant/ext/kites/scripts/linux/single-pod-create-udp-packets.sh "\"$MAC_ADDR_SINGLE_POD\"" "\"$MAC_ADDR_SINGLE_POD\"" "\"$IP_PARSED_SINGLE_POD\"" "\"$IP_PARSED_SINGLE_POD\"" 1000 singlePodToSinglePod single-pod $CNI
+	for byte in "${bytes[@]}"
+	do
+		bash /vagrant/ext/kites/scripts/linux/single-pod-create-udp-packets.sh "\"$MAC_ADDR_SINGLE_POD\"" "\"$MAC_ADDR_SINGLE_POD\"" "\"$IP_PARSED_SINGLE_POD\"" "\"$IP_PARSED_SINGLE_POD\"" $byte singlePodToSinglePod single-pod $CNI
+	done
 fi
-# bytes=(100 1000)
+
 for byte in "${bytes[@]}"
 do
    for (( i=1; i<=$N; i++ ))
