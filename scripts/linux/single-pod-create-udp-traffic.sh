@@ -11,12 +11,14 @@ bytes=("$@")
 echo "diff nodes? $RUN_TEST_DIFF"
 
 
-echo "Creating UDP Packets for single POD" 
+echo "Creating UDP Packets for single POD"
 if $RUN_TEST_SAME; then
-	bash /vagrant/ext/kites/scripts/linux/single-pod-create-udp-packets.sh "\"$MAC_ADDR_SINGLE_POD\"" "\"$MAC_ADDR_SINGLE_POD\"" "\"$IP_PARSED_SINGLE_POD\"" "\"$IP_PARSED_SINGLE_POD\"" 100 singlePodToSinglePod single-pod $CNI
-	bash /vagrant/ext/kites/scripts/linux/single-pod-create-udp-packets.sh "\"$MAC_ADDR_SINGLE_POD\"" "\"$MAC_ADDR_SINGLE_POD\"" "\"$IP_PARSED_SINGLE_POD\"" "\"$IP_PARSED_SINGLE_POD\"" 1000 singlePodToSinglePod single-pod $CNI
+	for byte in "${bytes[@]}"
+	do
+		bash /vagrant/ext/kites/scripts/linux/single-pod-create-udp-packets.sh "\"$MAC_ADDR_SINGLE_POD\"" "\"$MAC_ADDR_SINGLE_POD\"" "\"$IP_PARSED_SINGLE_POD\"" "\"$IP_PARSED_SINGLE_POD\"" $byte singlePodToSinglePod single-pod $CNI
+	done
 fi
-# bytes=(100 1000)
+
 for byte in "${bytes[@]}"
 do
    for (( i=1; i<=$N; i++ ))

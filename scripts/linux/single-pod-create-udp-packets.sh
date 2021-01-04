@@ -19,6 +19,7 @@ else
 fi
 
 TEMP_IP_ADDR_POD_1=$(sed -e "s/\r//g" <<< $IP_ADDR_POD_1)
+TEMP_IP_ADDR_POD_1=$(sed -e "s/^[ \t]*//" <<< $TEMP_IP_ADDR_POD_1)
 TEMP_IP_ADDR_POD_2=$(sed -e "s/\r//g" <<< $IP_ADDR_POD_2) 
 NEW_IP_ADDR_POD_1=$(sed -e "s/\"//g" <<< $TEMP_IP_ADDR_POD_1) 
 NEW_IP_ADDR_POD_2=$(sed -e "s/\"//g" <<< $TEMP_IP_ADDR_POD_2)

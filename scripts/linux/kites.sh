@@ -40,7 +40,6 @@ RUN_TEST_SAMENODE="true"
 RUN_TEST_DIFF="true"
 RUN_TEST_CPU="true"
 CLEAN_ALL="false"
-IPv6DualStack="false"
 RUN_IPV4_ONLY="true"
 RUN_IPV6_ONLY="false"
 PKT_BYTES=(100)
@@ -576,9 +575,9 @@ log_inf "KITES start."
 
 if $RUN_TEST_CPU; then
     # TO CHECK
-    start_cpu_monitor_nodes $N "IDLE" 10 "IDLE" "no_pkt" "START" &
+    start_cpu_monitor_nodes $N "IDLE" "-" "IDLE" "no_node" "no_pkt" "no_pps" "START" &
     sleep 10
-    start_cpu_monitor_nodes $N "IDLE" 10 "IDLE" "no_pkt" "STOP"
+    start_cpu_monitor_nodes $N "IDLE" "-" "IDLE" "no_node" "no_pkt" "no_pps" "STOP"
 fi
 
 create_name_space
