@@ -113,8 +113,8 @@ if $RUN_TEST_SAMENODE; then
             if $RUN_TEST_CPU; then
                 ${KITES_HOME}/scripts/linux/cpu-monitoring.sh $N "DIFFNODE" 2 "${SINGLE_POD_HOSTNAME//[$' ']/}TO${!host1_pod//[$' ']/}" $CPU_TEST $BYTE $PPS "START" &
             fi
-            kubectl exec -i ${!name1_pod} -- bash -c "${KITES_HOME}/scripts/linux/netsniff-test.sh singlePodToPod$minion_n-${BYTE}byte.pcap \"$SINGLE_POD_IP\" \"${!ip1_pod}\" \"$SINGLE_POD_HOSTNAME\" \"${!host1_pod}\" \"$SINGLE_POD_NAME\" \"${!name1_pod}\" ${!folder1p_name} $BYTE $PPS $ID_EXP" & sleep 2 &&
-            kubectl exec -i $SINGLE_POD_NAME -- bash -c "${KITES_HOME}/scripts/linux/trafgen-test.sh singlePodToPod$minion_n-${BYTE}byte.cfg \"$SINGLE_POD_IP\" \"${!ip1_pod}\" \"$SINGLE_POD_HOSTNAME\" \"${!host1_pod}\" \"$SINGLE_POD_NAME\" \"${!name1_pod}\" $FOLDER_SINGLE_POD $BYTE $PPS"
+            kubectl -n ${KITES_NAMSPACE_NAME} exec -i ${!name1_pod} -- bash -c "${KITES_HOME}/scripts/linux/netsniff-test.sh singlePodToPod$minion_n-${BYTE}byte.pcap \"$SINGLE_POD_IP\" \"${!ip1_pod}\" \"$SINGLE_POD_HOSTNAME\" \"${!host1_pod}\" \"$SINGLE_POD_NAME\" \"${!name1_pod}\" ${!folder1p_name} $BYTE $PPS $ID_EXP" & sleep 2 &&
+            kubectl -n ${KITES_NAMSPACE_NAME} exec -i $SINGLE_POD_NAME -- bash -c "${KITES_HOME}/scripts/linux/trafgen-test.sh singlePodToPod$minion_n-${BYTE}byte.cfg \"$SINGLE_POD_IP\" \"${!ip1_pod}\" \"$SINGLE_POD_HOSTNAME\" \"${!host1_pod}\" \"$SINGLE_POD_NAME\" \"${!name1_pod}\" $FOLDER_SINGLE_POD $BYTE $PPS"
             if $RUN_TEST_CPU; then
                 ${KITES_HOME}/scripts/linux/cpu-monitoring.sh $N "DIFFNODE" 2 "${SINGLE_POD_HOSTNAME//[$' ']/}TO${!host1_pod//[$' ']/}" $CPU_TEST $BYTE $PPS "STOP" &
             fi
