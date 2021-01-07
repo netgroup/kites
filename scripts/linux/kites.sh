@@ -240,16 +240,23 @@ function exec_tcp_test_between_pods() {
             log_debug "host1_pod= ${!host1_pod}    host2_pod= ${!host2_pod}"
             if $RUN_TEST_CPU; then
                 if [ "$i" -eq "$j" ] && $RUN_TEST_SAME; then
-                    start_cpu_monitor_nodes "$N" "SAMEPOD: ${!name1_pod//[$' ']/}" 10 $TCP_TEST
+                    start_cpu_monitor_nodes "$N" "SAMEPOD" 0 "${!name1_pod//[$' ']/}" $TCP_TEST "no" "no"
                 elif [ "${!host1_pod}" != "${!host2_pod}" ] && $RUN_TEST_DIFF; then
-                    start_cpu_monitor_nodes "$N" "DIFFERENTNODES: ${!host1_pod//[$' ']/} TO ${!host2_pod//[$' ']/}" 10 $TCP_TEST
+                    start_cpu_monitor_nodes "$N" "DIFFNODE" 2 "${!host1_pod//[$' ']/}-TO-${!host2_pod//[$' ']/}"  $TCP_TEST "no" "no"
                 fi
             fi
             kubectl -n ${KITES_NAMSPACE_NAME} exec -i ${!name1_pod} -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"${!ip1_pod}\" \"${!ip2_pod}\" \"${!host1_pod}\" \"${!host2_pod}\" \"${!name1_pod}\" \"${!name2_pod}\" $ID_EXP"
+            if $RUN_TEST_CPU; then
+                if [ "$i" -eq "$j" ] && $RUN_TEST_SAME; then
+                    stop_cpu_monitor_nodes "$N" "SAMEPOD" 0 "${!name1_pod//[$' ']/}" $TCP_TEST "no" "no"
+                elif [ "${!host1_pod}" != "${!host2_pod}" ] && $RUN_TEST_DIFF; then
+                    stop_cpu_monitor_nodes "$N" "DIFFNODE" 2 "${!host1_pod//[$' ']/}-TO-${!host2_pod//[$' ']/}"  $TCP_TEST "no" "no"
+                fi
+            fi
         done
         if ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" = "${!host1_pod//[$' ']/}" ] && $RUN_TEST_SAMENODE) || ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" != "${!host1_pod//[$' ']/}" ] && $RUN_TEST_DIFF); then
             if $RUN_TEST_CPU; then
-                start_cpu_monitor_nodes "$N" "SINGLEPOD TO ${!name1_pod//[$' ']/}" 10 $TCP_TEST
+                start_cpu_monitor_nodes "$N" "SINGLEPOD" 3 "${!name1_pod//[$' ']/}" $TCP_TEST "no" "no"
             fi
 
             if [ "$RUN_IPV4_ONLY" == "true" ]; then
@@ -258,6 +265,9 @@ function exec_tcp_test_between_pods() {
                 declare single_pod_ip="SINGLE_POD_IP6"
             fi
             kubectl -n ${KITES_NAMSPACE_NAME} exec -i ${!name1_pod} -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"${!ip1_pod}\" \"${!single_pod_ip}\" \"${!host1_pod}\" \"$SINGLE_POD_HOSTNAME\" \"${!name1_pod}\" \"$SINGLE_POD_NAME\" $ID_EXP"
+            if $RUN_TEST_CPU; then
+                stop_cpu_monitor_nodes "$N" "SINGLEPOD" 3 "${!name1_pod//[$' ']/}" $TCP_TEST "no" "no"
+            fi
         fi
     done
 }
@@ -575,9 +585,9 @@ log_inf "KITES start."
 
 if $RUN_TEST_CPU; then
     # TO CHECK
-    start_cpu_monitor_nodes $N "IDLE" "-" "IDLE" "no_node" "no_pkt" "no_pps" "START" &
+    start_cpu_monitor_nodes $N "IDLE" "-" "IDLE" "no_node" "no_pkt" "no_pps" &
     sleep 10
-    start_cpu_monitor_nodes $N "IDLE" "-" "IDLE" "no_node" "no_pkt" "no_pps" "STOP"
+    stop_cpu_monitor_nodes $N "IDLE" "-" "IDLE" "no_node" "no_pkt" "no_pps"
 fi
 
 create_name_space

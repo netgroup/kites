@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo -n "Checking dependencies... \n"
+echo -n "Checking dependencies... "
 for name in sshpass awk sshpass iperf3 jq; do
     [[ $(which $name 2>/dev/null) ]] || {
         echo -en "\n$name needs to be installed.  'sudo apt-get install $name' \n"
