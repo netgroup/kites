@@ -1,6 +1,7 @@
 #!/bin/bash
 . utils/logging.sh
 . utils/check-dependencies.sh
+. utils/kubectl.sh
 
 ##
 #   Help function
@@ -242,15 +243,15 @@ function exec_tcp_test_between_pods() {
                 if [ "$i" -eq "$j" ] && $RUN_TEST_SAME; then
                     start_cpu_monitor_nodes "$N" "SAMEPOD" 0 "${!name1_pod//[$' ']/}" $TCP_TEST "no" "no"
                 elif [ "${!host1_pod}" != "${!host2_pod}" ] && $RUN_TEST_DIFF; then
-                    start_cpu_monitor_nodes "$N" "DIFFNODE" 2 "${!host1_pod//[$' ']/}-TO-${!host2_pod//[$' ']/}"  $TCP_TEST "no" "no"
+                    start_cpu_monitor_nodes "$N" "DIFFNODE" 2 "${!host1_pod//[$' ']/}-TO-${!host2_pod//[$' ']/}" $TCP_TEST "no" "no"
                 fi
             fi
-            kubectl -n ${KITES_NAMSPACE_NAME} exec -i ${!name1_pod} -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"${!ip1_pod}\" \"${!ip2_pod}\" \"${!host1_pod}\" \"${!host2_pod}\" \"${!name1_pod}\" \"${!name2_pod}\" $ID_EXP"
+            kctl_exec ${!name1_pod} "${KITES_HOME}/scripts/linux/iperf-test.sh ${!ip1_pod} ${!ip2_pod} ${!host1_pod} ${!host2_pod} ${!name1_pod} ${!name2_pod} $ID_EXP"
             if $RUN_TEST_CPU; then
                 if [ "$i" -eq "$j" ] && $RUN_TEST_SAME; then
                     stop_cpu_monitor_nodes "$N" "SAMEPOD" 0 "${!name1_pod//[$' ']/}" $TCP_TEST "no" "no"
                 elif [ "${!host1_pod}" != "${!host2_pod}" ] && $RUN_TEST_DIFF; then
-                    stop_cpu_monitor_nodes "$N" "DIFFNODE" 2 "${!host1_pod//[$' ']/}-TO-${!host2_pod//[$' ']/}"  $TCP_TEST "no" "no"
+                    stop_cpu_monitor_nodes "$N" "DIFFNODE" 2 "${!host1_pod//[$' ']/}-TO-${!host2_pod//[$' ']/}" $TCP_TEST "no" "no"
                 fi
             fi
         done
@@ -264,12 +265,139 @@ function exec_tcp_test_between_pods() {
             elif [ "$RUN_IPV6_ONLY" == "true" ]; then
                 declare single_pod_ip="SINGLE_POD_IP6"
             fi
-            kubectl -n ${KITES_NAMSPACE_NAME} exec -i ${!name1_pod} -- bash -c "vagrant/ext/kites/scripts/linux/iperf-test.sh \"${!ip1_pod}\" \"${!single_pod_ip}\" \"${!host1_pod}\" \"$SINGLE_POD_HOSTNAME\" \"${!name1_pod}\" \"$SINGLE_POD_NAME\" $ID_EXP"
+            kctl_exec ${!name1_pod} "${KITES_HOME}/scripts/linux/iperf-test.sh ${!ip1_pod} ${!single_pod_ip} ${!host1_pod} $SINGLE_POD_HOSTNAME ${!name1_pod} $SINGLE_POD_NAME $ID_EXP"
             if $RUN_TEST_CPU; then
                 stop_cpu_monitor_nodes "$N" "SINGLEPOD" 3 "${!name1_pod//[$' ']/}" $TCP_TEST "no" "no"
             fi
         fi
     done
+}
+
+function exec_udp_test() {
+    PPS=$1
+    BYTE=$2
+    ID_EXP=$3
+    N=$4
+    RUN_TEST_SAME=$5
+    RUN_TEST_SAMENODE=$6
+    RUN_TEST_DIFF=$7
+    RUN_TEST_CPU=$8
+    BASE_FOLDER=${KITES_HOME}/pod-shared
+    CPU_TEST="UDP"
+    INTER_EXPERIMENT_SLEEP=3
+    FOLDER_SINGLE_POD=single-pod
+
+    for ((minion_n = 1; minion_n <= $N; minion_n++)); do
+        folder_pod=pod$minion_n
+        declare -x FOLDER_POD_$minion_n=$folder_pod
+    done
+
+    log_debug "Copy Pod-Shared on Root of the PODS"
+    for ((minion_n = 1; minion_n <= $N; minion_n++)); do
+        declare name1_pod="POD_NAME_$minion_n"
+        kctl_exec ${!name1_pod} "cp -r ${KITES_HOME}/pod-shared /"
+    done
+    if $RUN_TEST_SAMENODE; then
+        kctl_exec $SINGLE_POD_NAME "cp -r ${KITES_HOME}/pod-shared /"
+    fi
+
+    if $RUN_TEST_SAME || $RUN_TEST_DIFF; then
+        for ((i = 1; i <= $N; i++)); do
+            declare folder1p_name="FOLDER_POD_$i"
+            cd $BASE_FOLDER/${!folder1p_name}
+
+            log_debug "..................POD $i TEST.................."
+            log_debug "----------------------------------------------"
+            for ((j = 1; j <= $N; j++)); do
+                declare name1_pod="POD_NAME_$i"
+                declare name2_pod="POD_NAME_$j"
+                declare ip1_pod="POD_IP_$i"
+                declare ip2_pod="POD_IP_$j"
+                declare host1_pod="POD_HOSTNAME_$i"
+                declare host2_pod="POD_HOSTNAME_$j"
+                declare folder2p_name="FOLDER_POD_$j"
+                if [ "$i" -eq "$j" ] && $RUN_TEST_SAME; then
+                    if $RUN_TEST_CPU; then
+                        start_cpu_monitor_nodes $N "SAMEPOD" 0 "${!host1_pod//[$' ']/}" $CPU_TEST $BYTE $PPS &
+                    fi
+                    kctl_exec ${!name1_pod} "${KITES_HOME}/scripts/linux/netsniff-test.sh samePod$i-${BYTE}byte.pcap ${!ip1_pod} ${!ip1_pod} ${!host1_pod} ${!host1_pod} ${!name1_pod} ${!name1_pod} ${!folder1p_name} $BYTE $PPS $ID_EXP" &
+                    sleep 2 &&
+                        kctl_exec ${!name1_pod} "${KITES_HOME}/scripts/linux/trafgen-test.sh samePod$i-${BYTE}byte.cfg ${!ip1_pod} ${!ip1_pod} ${!host1_pod} ${!host1_pod} ${!name1_pod} ${!name1_pod} ${!folder1p_name} $BYTE $PPS"
+                    if $RUN_TEST_CPU; then
+                        stop_cpu_monitor_nodes $N "SAMEPOD" 0 "${!host1_pod//[$' ']/}" $CPU_TEST $BYTE $PPS &
+                    fi
+                elif [ "${!host1_pod}" != "${!host2_pod}" ] && $RUN_TEST_DIFF; then
+                    if $RUN_TEST_CPU; then
+                        start_cpu_monitor_nodes $N "DIFFNODE" 2 "${!host1_pod//[$' ']/}TO${!host2_pod//[$' ']/}" $CPU_TEST $BYTE $PPS &
+                    fi
+                    kctl_exec ${!name1_pod} "${KITES_HOME}/scripts/linux/netsniff-test.sh pod${j}ToPod${i}-${BYTE}byte.pcap ${!ip2_pod} ${!ip1_pod} ${!host2_pod} ${!host1_pod} ${!name2_pod} ${!name1_pod} ${!folder1p_name} $BYTE $PPS $ID_EXP" &
+                    sleep 2 &&
+                        kctl_exec ${!name2_pod} "${KITES_HOME}/scripts/linux/trafgen-test.sh pod${j}ToPod${i}-${BYTE}byte.cfg ${!ip2_pod} ${!ip1_pod} ${!host2_pod} ${!host1_pod} ${!name2_pod} ${!name1_pod} ${!folder2p_name} $BYTE $PPS"
+                    if $RUN_TEST_CPU; then
+                        stop_cpu_monitor_nodes $N "DIFFNODE" 2 "${!host1_pod//[$' ']/}TO${!host2_pod//[$' ']/}" $CPU_TEST $BYTE $PPS &
+                    fi
+                fi
+                sleep $INTER_EXPERIMENT_SLEEP
+            done
+        done
+    fi
+
+    if $RUN_TEST_SAMENODE; then
+        log_debug "................SINGLE POD TEST................"
+        log_debug "----------------------------------------------"
+
+        if $RUN_TEST_SAME; then
+            if $RUN_TEST_CPU; then
+                start_cpu_monitor_nodes $N "SAMEPOD" 0 "$SINGLE_POD_HOSTNAME" $CPU_TEST $BYTE $PPS &
+            fi
+            kctl_exec $SINGLE_POD_NAME "${KITES_HOME}/scripts/linux/netsniff-test.sh singlePodToSinglePod-${BYTE}byte.pcap $SINGLE_POD_IP $SINGLE_POD_IP $SINGLE_POD_HOSTNAME $SINGLE_POD_HOSTNAME $SINGLE_POD_NAME $SINGLE_POD_NAME $FOLDER_SINGLE_POD $BYTE $PPS $ID_EXP" &
+            sleep 2 &&
+                kctl_exec $SINGLE_POD_NAME "${KITES_HOME}/scripts/linux/trafgen-test.sh singlePodToSinglePod-${BYTE}byte.cfg $SINGLE_POD_IP $SINGLE_POD_IP $SINGLE_POD_HOSTNAME $SINGLE_POD_HOSTNAME $SINGLE_POD_NAME $SINGLE_POD_NAME $FOLDER_SINGLE_POD $BYTE $PPS"
+            if $RUN_TEST_CPU; then
+                stop_cpu_monitor_nodes $N "SAMEPOD" 0 "$SINGLE_POD_HOSTNAME" $CPU_TEST $BYTE $PPS &
+            fi
+            sleep $INTER_EXPERIMENT_SLEEP
+        fi
+        for ((minion_n = 1; minion_n <= $N; minion_n++)); do
+            declare name1_pod="POD_NAME_$minion_n"
+            declare ip1_pod="POD_IP_$minion_n"
+            declare host1_pod="POD_HOSTNAME_$minion_n"
+            declare folder1p_name="FOLDER_POD_$minion_n"
+            if ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" = "${!host1_pod//[$' ']/}" ] && $RUN_TEST_SAMENODE); then
+                if $RUN_TEST_CPU; then
+                    start_cpu_monitor_nodes $N "SAMENODE" 1 "${!host1_pod//[$' ']/}" $CPU_TEST $BYTE $PPS &
+                fi
+                kctl_exec ${!name1_pod} "${KITES_HOME}/scripts/linux/netsniff-test.sh singlePodToPod$minion_n-${BYTE}byte.pcap $SINGLE_POD_IP ${!ip1_pod} $SINGLE_POD_HOSTNAME ${!host1_pod} $SINGLE_POD_NAME ${!name1_pod} ${!folder1p_name} $BYTE $PPS $ID_EXP" &
+                sleep 2 &&
+                    kctl_exec $SINGLE_POD_NAME "${KITES_HOME}/scripts/linux/trafgen-test.sh singlePodToPod$minion_n-${BYTE}byte.cfg $SINGLE_POD_IP ${!ip1_pod} $SINGLE_POD_HOSTNAME ${!host1_pod} $SINGLE_POD_NAME ${!name1_pod} $FOLDER_SINGLE_POD $BYTE $PPS"
+                if $RUN_TEST_CPU; then
+                    stop_cpu_monitor_nodes $N "SAMENODE" 1 "${!host1_pod//[$' ']/}" $CPU_TEST $BYTE $PPS &
+                fi
+
+            elif ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" != "${!host1_pod//[$' ']/}" ] && $RUN_TEST_DIFF); then
+                if $RUN_TEST_CPU; then
+                    start_cpu_monitor_nodes $N "DIFFNODE" 2 "${SINGLE_POD_HOSTNAME//[$' ']/}TO${!host1_pod//[$' ']/}" $CPU_TEST $BYTE $PPS &
+                fi
+                kctl_exec ${!name1_pod} "${KITES_HOME}/scripts/linux/netsniff-test.sh singlePodToPod$minion_n-${BYTE}byte.pcap $SINGLE_POD_IP ${!ip1_pod} $SINGLE_POD_HOSTNAME ${!host1_pod} $SINGLE_POD_NAME ${!name1_pod} ${!folder1p_name} $BYTE $PPS $ID_EXP" &
+                sleep 2 &&
+                    kctl_exec $SINGLE_POD_NAME "${KITES_HOME}/scripts/linux/trafgen-test.sh singlePodToPod$minion_n-${BYTE}byte.cfg $SINGLE_POD_IP ${!ip1_pod} $SINGLE_POD_HOSTNAME ${!host1_pod} $SINGLE_POD_NAME ${!name1_pod} $FOLDER_SINGLE_POD $BYTE $PPS"
+                if $RUN_TEST_CPU; then
+                    stop_cpu_monitor_nodes $N "DIFFNODE" 2 "${SINGLE_POD_HOSTNAME//[$' ']/}TO${!host1_pod//[$' ']/}" $CPU_TEST $BYTE $PPS &
+                fi
+            fi
+            sleep $INTER_EXPERIMENT_SLEEP
+        done
+    fi
+
+    log_debug "Copy Root on Pod-Shared"
+    for ((minion_n = 1; minion_n <= $N; minion_n++)); do
+        declare name1_pod="POD_NAME_$minion_n"
+        kctl_exec ${!name1_pod} "cp -r /pod-shared ${KITES_HOME}/ && rm -r /pod-shared"
+    done
+    if $RUN_TEST_SAMENODE; then
+        kctl_exec $SINGLE_POD_NAME "cp -r /pod-shared ${KITES_HOME}/ && rm -r /pod-shared"
+    fi
+
 }
 
 function exec_net_test() {
@@ -293,7 +421,7 @@ function exec_net_test() {
                 log_debug "____________________________________________________"
                 log_debug "TRAFFIC LOAD: ${pps}pps "
                 log_debug "____________________________________________________"
-                ${KITES_HOME}/scripts/linux/udp-test.sh $pps $byte $ID_EXP $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
+                exec_udp_test $pps $byte $ID_EXP $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
                 ${KITES_HOME}/scripts/linux/merge-udp-test.sh $pps $byte $N
             done
         done
