@@ -24,12 +24,21 @@ else
 fi
 echo "PPS, CONFIG, CONFIG_CODE, TEST_TYPE, DATE, CPU-${HOSTNAME}, %" >> cpu-$HOSTNAME-$CPU_TEST-${BYTE}bytes.csv
 
-# RUNTIME="$DURATION second"
-# ENDTIME=$(date -ud "$RUNTIME" +%s)
-# while [[ $(date -u +%s) -le $ENDTIME ]]
+if [[ $CPU_TEST == "UDP" ]]; then
+    RUNTIME="25 second"
+    ENDTIME=$(date -ud "$RUNTIME" +%s)
+    while_cond="$(date -u +%s) -le $ENDTIME"
+elif [[ $CPU_TEST == "TCP" ]]; then
+    RUNTIME="10 second"
+    ENDTIME=$(date -ud "$RUNTIME" +%s)
+    while_cond="$(date -u +%s) -le $ENDTIME"
+else
+    while_cond=true
+fi
 
-sleep 2
-while true
+
+sleep 1
+while [[ $while_cond ]]
 do 
 	DATE=$(date "+%Y-%m-%d %H:%M:%S")
 	CPU_USAGE=$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1}')

@@ -73,16 +73,16 @@ if $RUN_TEST_SAME || $RUN_TEST_DIFF; then
                 kubectl exec -i ${!name1_pod} -- bash -c "/vagrant/ext/kites/scripts/linux/netsniff-test.sh samePod${i}-${BYTE}byte.pcap \"${!ip1_pod}\" \"${!ip1_pod}\" \"${!host1_pod}\" \"${!host1_pod}\" \"${!name1_pod}\" \"${!name1_pod}\" ${!folder1p_name} $BYTE $PPS $ID_EXP" & sleep 2 &&
                 kubectl exec -i ${!name1_pod} -- bash -c "/vagrant/ext/kites/scripts/linux/trafgen-test.sh samePod${i}-${BYTE}byte.cfg \"${!ip1_pod}\" \"${!ip1_pod}\" \"${!host1_pod}\" \"${!host1_pod}\" \"${!name1_pod}\" \"${!name1_pod}\" ${!folder1p_name} $BYTE $PPS"
                 if $RUN_TEST_CPU; then
-                    /vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "SAMEPOD" 0 "${!host1_pod//[$' ']/}" $CPU_TEST $BYTE $PPS "STOP" &
+                    /vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "SAMEPOD" 0 "${!host1_pod//[$' ']/}" $CPU_TEST $BYTE $PPS "STOP"
                 fi
             elif [ "${!host1_pod}" != "${!host2_pod}" ] &&  $RUN_TEST_DIFF; then
                 if $RUN_TEST_CPU; then
-                    /vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "DIFFNODE" 2 "${!host1_pod//[$' ']/}TO${!host2_pod//[$' ']/}" $CPU_TEST $BYTE $PPS "START" &
+                    /vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "DIFFNODE" 2 "${!host2_pod//[$' ']/}TO${!host1_pod//[$' ']/}" $CPU_TEST $BYTE $PPS "START" &
                 fi
                 kubectl exec -i ${!name1_pod} -- bash -c "/vagrant/ext/kites/scripts/linux/netsniff-test.sh pod${j}ToPod${i}-${BYTE}byte.pcap \"${!ip2_pod}\" \"${!ip1_pod}\" \"${!host2_pod}\" \"${!host1_pod}\" \"${!name2_pod}\" \"${!name1_pod}\" ${!folder1p_name} $BYTE $PPS $ID_EXP" & sleep 2 &&
                 kubectl exec -i ${!name2_pod} -- bash -c "/vagrant/ext/kites/scripts/linux/trafgen-test.sh pod${j}ToPod${i}-${BYTE}byte.cfg \"${!ip2_pod}\" \"${!ip1_pod}\" \"${!host2_pod}\" \"${!host1_pod}\" \"${!name2_pod}\" \"${!name1_pod}\" ${!folder2p_name} $BYTE $PPS"
                 if $RUN_TEST_CPU; then
-                    /vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "DIFFNODE" 2 "${!host1_pod//[$' ']/}TO${!host2_pod//[$' ']/}" $CPU_TEST $BYTE $PPS"STOP" &
+                    /vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "DIFFNODE" 2 "${!host2_pod//[$' ']/}TO${!host1_pod//[$' ']/}" $CPU_TEST $BYTE $PPS "STOP"
                 fi
             fi
             sleep $INTER_EXPERIMENT_SLEEP
@@ -102,7 +102,7 @@ if $RUN_TEST_SAMENODE; then
         kubectl exec -i $SINGLE_POD_NAME -- bash -c "/vagrant/ext/kites/scripts/linux/netsniff-test.sh singlePodToSinglePod-${BYTE}byte.pcap \"$SINGLE_POD_IP\" \"$SINGLE_POD_IP\" \"$SINGLE_POD_HOSTNAME\" \"$SINGLE_POD_HOSTNAME\" \"$SINGLE_POD_NAME\" \"$SINGLE_POD_NAME\" $FOLDER_SINGLE_POD $BYTE $PPS $ID_EXP" & sleep 2 &&
         kubectl exec -i $SINGLE_POD_NAME -- bash -c "/vagrant/ext/kites/scripts/linux/trafgen-test.sh singlePodToSinglePod-${BYTE}byte.cfg \"$SINGLE_POD_IP\" \"$SINGLE_POD_IP\" \"$SINGLE_POD_HOSTNAME\" \"$SINGLE_POD_HOSTNAME\" \"$SINGLE_POD_NAME\" \"$SINGLE_POD_NAME\" $FOLDER_SINGLE_POD $BYTE $PPS"
         if $RUN_TEST_CPU; then
-            /vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "SAMEPOD" 0 "$SINGLE_POD_HOSTNAME" $CPU_TEST $BYTE $PPS "STOP" &
+            /vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "SAMEPOD" 0 "$SINGLE_POD_HOSTNAME" $CPU_TEST $BYTE $PPS "STOP"
         fi
         sleep $INTER_EXPERIMENT_SLEEP
     fi
@@ -119,7 +119,7 @@ if $RUN_TEST_SAMENODE; then
             kubectl exec -i ${!name1_pod} -- bash -c "/vagrant/ext/kites/scripts/linux/netsniff-test.sh singlePodToPod$minion_n-${BYTE}byte.pcap \"$SINGLE_POD_IP\" \"${!ip1_pod}\" \"$SINGLE_POD_HOSTNAME\" \"${!host1_pod}\" \"$SINGLE_POD_NAME\" \"${!name1_pod}\" ${!folder1p_name} $BYTE $PPS $ID_EXP" & sleep 2 &&
             kubectl exec -i $SINGLE_POD_NAME -- bash -c "/vagrant/ext/kites/scripts/linux/trafgen-test.sh singlePodToPod$minion_n-${BYTE}byte.cfg \"$SINGLE_POD_IP\" \"${!ip1_pod}\" \"$SINGLE_POD_HOSTNAME\" \"${!host1_pod}\" \"$SINGLE_POD_NAME\" \"${!name1_pod}\" $FOLDER_SINGLE_POD $BYTE $PPS"
             if $RUN_TEST_CPU; then
-                /vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "SAMENODE" 1 "${!host1_pod//[$' ']/}" $CPU_TEST $BYTE $PPS "STOP" &
+                /vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "SAMENODE" 1 "${!host1_pod//[$' ']/}" $CPU_TEST $BYTE $PPS "STOP"
             fi
 
         elif ( [ "${SINGLE_POD_HOSTNAME//[$' ']/}" != "${!host1_pod//[$' ']/}" ]  && $RUN_TEST_DIFF ); then
@@ -129,7 +129,7 @@ if $RUN_TEST_SAMENODE; then
             kubectl exec -i ${!name1_pod} -- bash -c "/vagrant/ext/kites/scripts/linux/netsniff-test.sh singlePodToPod$minion_n-${BYTE}byte.pcap \"$SINGLE_POD_IP\" \"${!ip1_pod}\" \"$SINGLE_POD_HOSTNAME\" \"${!host1_pod}\" \"$SINGLE_POD_NAME\" \"${!name1_pod}\" ${!folder1p_name} $BYTE $PPS $ID_EXP" & sleep 2 &&
             kubectl exec -i $SINGLE_POD_NAME -- bash -c "/vagrant/ext/kites/scripts/linux/trafgen-test.sh singlePodToPod$minion_n-${BYTE}byte.cfg \"$SINGLE_POD_IP\" \"${!ip1_pod}\" \"$SINGLE_POD_HOSTNAME\" \"${!host1_pod}\" \"$SINGLE_POD_NAME\" \"${!name1_pod}\" $FOLDER_SINGLE_POD $BYTE $PPS"
             if $RUN_TEST_CPU; then
-                /vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "DIFFNODE" 2 "${SINGLE_POD_HOSTNAME//[$' ']/}TO${!host1_pod//[$' ']/}" $CPU_TEST $BYTE $PPS "STOP" &
+                /vagrant/ext/kites/scripts/linux/cpu-monitoring.sh $N "DIFFNODE" 2 "${SINGLE_POD_HOSTNAME//[$' ']/}TO${!host1_pod//[$' ']/}" $CPU_TEST $BYTE $PPS "STOP"
             fi
         fi
         sleep $INTER_EXPERIMENT_SLEEP
