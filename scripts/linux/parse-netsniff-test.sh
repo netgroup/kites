@@ -1,5 +1,8 @@
 #!/bin/bash
 # CNI | Tipo di test | PPS | From VM | To VM | From Pod | To Pod | From IP | To IP | Outgoing | Incoming | Passed | TX Time | RX Time
+
+. ${KITES_HOME}/scripts/linux/utils/csv.sh
+
 CNI=$1
 netsniff_input=$2
 trafgen_input=$3
@@ -8,7 +11,7 @@ OLDIFS=$IFS
 IFS=', '
 
 
-cd /vagrant/ext/kites/pod-shared/tests/$CNI
+cd ${KITES_HOME}/pod-shared/tests/$CNI
 
 comb_t=$(wc -l $trafgen_input | awk '{ print $1 }')
 declare end_t=$((comb_t - 19))
@@ -30,7 +33,7 @@ do
     USEC_TX=$(awk 'NR=='$X+18' { print $4}' < $trafgen_input | sed 's/\(^...\).*/\1/')
     TX_TIME=$SEC_TX.${USEC_TX}
     #echo $TX_TIME 
-    /vagrant/ext/kites/scripts/linux/create-csv-from-trafgen.sh $CNI $OUTGOING $TX_TIME $VM_SRC $VM_DEST $POD_SRC $POD_DEST $PPS
+    append_csv_from_trafgen $CNI $OUTGOING $TX_TIME $VM_SRC $VM_DEST $POD_SRC $POD_DEST $PPS
 done
 
 
@@ -40,7 +43,7 @@ comb_n=$(wc -l $netsniff_input | awk '{ print $1 }')
 declare end_n=$((comb_n - 18))
 
 
-cd /vagrant/ext/kites/pod-shared/tests/$CNI
+cd ${KITES_HOME}/pod-shared/tests/$CNI
 echo "im in parse netsniff"
 
 for (( X=0; X<=$end_n; X+=18))
@@ -104,7 +107,7 @@ do
     done < trafgen-tests.csv
 
     #echo $CONFIG
-    /vagrant/ext/kites/scripts/linux/create-csv-from-netsniff.sh $CNI $TEST_TYPE $ID_EXP $PPS $VM_SRC $VM_DEST $POD_SRC $POD_DEST $IP_SRC $IP_DEST $INCOMING $PASSED $RX_TIME $TIMESTAMP $BYTE $CONFIG $CONFIG_CODE $OUTGOING $TX_TIME
+    append_csv_from_netsniff $CNI $TEST_TYPE $ID_EXP $PPS $VM_SRC $VM_DEST $POD_SRC $POD_DEST $IP_SRC $IP_DEST $INCOMING $PASSED $RX_TIME $TIMESTAMP $BYTE $CONFIG $CONFIG_CODE $OUTGOING $TX_TIME
 done
 
 IFS=$OLDIFS

@@ -18,6 +18,7 @@ function display_usage() {
     echo "  --conf              : set the configuration between: all, samepod, samenode, diffnode. Default set =all"
     echo "  --clean-all         : remove all experiment data and pods already created."
     echo "  --namespace | -n    : set the namespace name. Default set =kites"
+    echo "  --nocpu | -nc       : do not execute CPU monitoing."
     echo "  -4                  : use IPv4 only. Default."
     echo "  -6                  : use IPv6 only."
     echo "  --bytes | -b        : set a list comma separated of bytes. Example: 100,1000. Default 100."

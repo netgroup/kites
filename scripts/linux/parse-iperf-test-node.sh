@@ -1,9 +1,11 @@
 #!/bin/bash
 # CNI | Tipo di test | ID_EXP | From VM | To VM | From Pod | To Pod | From IP | To IP | Outgoing | Out Unit | Incoming | Inc Unit | Passed | Pas Unit | TX Time | RX Time | TIMESTAMP
+. ${KITES_HOME}/scripts/linux/utils/csv.sh
+
 CNI=$1
 iperf_input=$2
 N=$3
-cd /vagrant/ext/kites/pod-shared/tests/$CNI
+cd ${KITES_HOME}/pod-shared/tests/$CNI
 # declare n_plus=$((N + 1))
 # declare comb=$n_plus*$N
 comb=$(wc -l $iperf_input | awk '{ print $1 }')
@@ -46,5 +48,5 @@ THR_UNIT=$(awk 'NR=='$X+24' { print $8}' < $iperf_input)
 #echo $THR_UNIT 
 TEST_TYPE=$(awk 'NR=='$X+27' { print $1}' < $iperf_input)
 #echo $TEST_TYPE
-/vagrant/ext/kites/scripts/linux/create-csv-from-iperf.sh $CNI $TEST_TYPE $ID_EXP $VM_SRC $VM_DEST $POD_SRC $POD_DEST $IP_SRC $IP_DEST $OUTGOING $OUT_UNIT $INCOMING $INC_UNIT $THROUGHPUT $THR_UNIT $TX_TIME $RX_TIME $TIMESTAMP
+append_csv_from_iperf $CNI $TEST_TYPE $ID_EXP $VM_SRC $VM_DEST $POD_SRC $POD_DEST $IP_SRC $IP_DEST $OUTGOING $OUT_UNIT $INCOMING $INC_UNIT $THROUGHPUT $THR_UNIT $TX_TIME $RX_TIME $TIMESTAMP
 done
