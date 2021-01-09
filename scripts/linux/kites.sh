@@ -166,7 +166,7 @@ function get_pods_info() {
         mac_pod=$(kubectl -n ${KITES_NAMSPACE_NAME} exec -i "${!pod_name}" -- bash -c "${KITES_HOME}/scripts/linux/get-mac-address-pod.sh")
         declare -xg "MAC_ADDR_POD_$pod_index=$mac_pod"
         #echo "MAC_ADDR_POD_$pod_index=$mac_pod">> ${KITES_HOME}/pod-shared/pods_nodes.env
-        echo "Name: ${!pod_name}, IPv4: ${!ip_name}, MAC: $mac_pod"
+        log_debug "Name: ${!pod_name}, IPv4: ${!ip_name}, MAC: $mac_pod"
         ((pod_index++))
     done
 
@@ -233,7 +233,7 @@ function initialize_net_test() {
 function exec_tcp_test_between_pods() {
     log_inf "Start execution TCP net test between pods."
     ID_EXP=$1
-    TCP_TEST="TCP"
+    CPU_TEST="TCP"
     cd "${KITES_HOME}/pod-shared"
 
     for ((i = 1; i <= $N; i++)); do
@@ -255,23 +255,23 @@ function exec_tcp_test_between_pods() {
             log_debug "host1_pod= ${!host1_pod}    host2_pod= ${!host2_pod}"
             if $RUN_TEST_CPU; then
                 if [ "$i" -eq "$j" ] && $RUN_TEST_SAME; then
-                    start_cpu_monitor_nodes "$N" "SAMEPOD" 0 "${!name1_pod//[$' ']/}" $TCP_TEST "no" "no"
+                    start_cpu_monitor_nodes "$N" "SAMEPOD" 0 "${!host1_pod//[$' ']/}" $CPU_TEST "no" "no"
                 elif [ "${!host1_pod}" != "${!host2_pod}" ] && $RUN_TEST_DIFF; then
-                    start_cpu_monitor_nodes "$N" "DIFFNODE" 2 "${!host1_pod//[$' ']/}-TO-${!host2_pod//[$' ']/}" $TCP_TEST "no" "no"
+                    start_cpu_monitor_nodes "$N" "DIFFNODE" 2 "${!host1_pod//[$' ']/}-TO-${!host2_pod//[$' ']/}" $CPU_TEST "no" "no"
                 fi
             fi
             kctl_exec ${!name1_pod} "${KITES_HOME}/scripts/linux/iperf-test.sh ${!ip1_pod} ${!ip2_pod} ${!host1_pod} ${!host2_pod} ${!name1_pod} ${!name2_pod} $ID_EXP"
             if $RUN_TEST_CPU; then
                 if [ "$i" -eq "$j" ] && $RUN_TEST_SAME; then
-                    stop_cpu_monitor_nodes "$N" "SAMEPOD" 0 "${!name1_pod//[$' ']/}" $TCP_TEST "no" "no"
+                    stop_cpu_monitor_nodes "$N" "SAMEPOD" 0 "${!host1_pod//[$' ']/}" $CPU_TEST "no" "no"
                 elif [ "${!host1_pod}" != "${!host2_pod}" ] && $RUN_TEST_DIFF; then
-                    stop_cpu_monitor_nodes "$N" "DIFFNODE" 2 "${!host1_pod//[$' ']/}-TO-${!host2_pod//[$' ']/}" $TCP_TEST "no" "no"
+                    stop_cpu_monitor_nodes "$N" "DIFFNODE" 2 "${!host1_pod//[$' ']/}-TO-${!host2_pod//[$' ']/}" $CPU_TEST "no" "no"
                 fi
             fi
         done
         if ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" = "${!host1_pod//[$' ']/}" ] && $RUN_TEST_SAMENODE) || ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" != "${!host1_pod//[$' ']/}" ] && $RUN_TEST_DIFF); then
             if $RUN_TEST_CPU; then
-                start_cpu_monitor_nodes "$N" "SINGLEPOD" 3 "${!name1_pod//[$' ']/}" $TCP_TEST "no" "no"
+                start_cpu_monitor_nodes "$N" "SAMENODE" 1 "${!host1_pod//[$' ']/}" $CPU_TEST "no" "no"
             fi
 
             if [ "$RUN_IPV4_ONLY" == "true" ]; then
@@ -281,7 +281,7 @@ function exec_tcp_test_between_pods() {
             fi
             kctl_exec ${!name1_pod} "${KITES_HOME}/scripts/linux/iperf-test.sh ${!ip1_pod} ${!single_pod_ip} ${!host1_pod} $SINGLE_POD_HOSTNAME ${!name1_pod} $SINGLE_POD_NAME $ID_EXP"
             if $RUN_TEST_CPU; then
-                stop_cpu_monitor_nodes "$N" "SINGLEPOD" 3 "${!name1_pod//[$' ']/}" $TCP_TEST "no" "no"
+                stop_cpu_monitor_nodes "$N" "SAMENODE" 1 "${!host1_pod//[$' ']/}" $CPU_TEST "no" "no"
             fi
         fi
     done
@@ -342,13 +342,13 @@ function exec_udp_test() {
                     fi
                 elif [ "${!host1_pod}" != "${!host2_pod}" ] && $RUN_TEST_DIFF; then
                     if $RUN_TEST_CPU; then
-                        start_cpu_monitor_nodes $N "DIFFNODE" 2 "${!host1_pod//[$' ']/}TO${!host2_pod//[$' ']/}" $CPU_TEST $BYTE $PPS &
+                        start_cpu_monitor_nodes $N "DIFFNODE" 2 "${!host2_pod//[$' ']/}TO${!host1_pod//[$' ']/}" $CPU_TEST $BYTE $PPS &
                     fi
                     kctl_exec ${!name1_pod} "${KITES_HOME}/scripts/linux/netsniff-test.sh pod${j}ToPod${i}-${BYTE}byte.pcap ${!ip2_pod} ${!ip1_pod} ${!host2_pod} ${!host1_pod} ${!name2_pod} ${!name1_pod} ${!folder1p_name} $BYTE $PPS $ID_EXP" &
                     sleep 2 &&
                         kctl_exec ${!name2_pod} "${KITES_HOME}/scripts/linux/trafgen-test.sh pod${j}ToPod${i}-${BYTE}byte.cfg ${!ip2_pod} ${!ip1_pod} ${!host2_pod} ${!host1_pod} ${!name2_pod} ${!name1_pod} ${!folder2p_name} $BYTE $PPS"
                     if $RUN_TEST_CPU; then
-                        stop_cpu_monitor_nodes $N "DIFFNODE" 2 "${!host1_pod//[$' ']/}TO${!host2_pod//[$' ']/}" $CPU_TEST $BYTE $PPS &
+                        stop_cpu_monitor_nodes $N "DIFFNODE" 2 "${!host2_pod//[$' ']/}TO${!host1_pod//[$' ']/}" $CPU_TEST $BYTE $PPS &
                     fi
                 fi
                 sleep $INTER_EXPERIMENT_SLEEP
