@@ -703,6 +703,8 @@ done
 
 if $CLEAN_ALL; then
     clean_all
+else
+    clean_pod_shared_dir
 fi
 
 if [ "$CNI" = "" ]; then
