@@ -17,7 +17,7 @@ log_inf "Cleanup environment"
 vagrant ssh k8s-master-1.k8s-play.local -- -t 'cd /vagrant/ext/kites/scripts/linux/ && ./kites.sh --clean-all'
 
 
-#WEAVE NET
+WEAVE NET
 cleanup_mount
 log_debug "SETTING WEAVE NET IN ENV.YAML"
 sed -i 's/no-cni-plugin: true/no-cni-plugin: false/g' env.yaml
@@ -58,16 +58,16 @@ sleep 60
 log_debug "START TEST WITH  CALICO VXLAN"
 vagrant ssh k8s-master-1.k8s-play.local -- -t 'cd /vagrant/ext/kites/scripts/linux/ && ./kites.sh --cni calicoVXLAN --nodes 2'
 
-# # FLANNEL
-# cleanup_mount
-# log_debug "SETTING FLANNEL IN ENV.YAML"
-# sed -i 's/calico: true/calico: false/g' env.yaml
-# sed -i 's/flannel: false/flannel: true/g' env.yaml
-# log_debug "Vagrant quick-setup with FLANNEL"
-# vagrant provision --provision-with quick-setup
-# log_debug "wait 60 seconds"
-# sleep 60
-# log_debug "START TEST WITH FLANNEL"
-# vagrant ssh k8s-master-1.k8s-play.local -- -t 'cd /vagrant/ext/kites/scripts/linux/ && ./kites.sh --cni flannel --nodes 2'
+# FLANNEL
+cleanup_mount
+log_debug "SETTING FLANNEL IN ENV.YAML"
+sed -i 's/calico: true/calico: false/g' env.yaml
+sed -i 's/flannel: false/flannel: true/g' env.yaml
+log_debug "Vagrant quick-setup with FLANNEL"
+vagrant provision --provision-with quick-setup
+log_debug "wait 60 seconds"
+sleep 60
+log_debug "START TEST WITH FLANNEL"
+vagrant ssh k8s-master-1.k8s-play.local -- -t 'cd /vagrant/ext/kites/scripts/linux/ && ./kites.sh --cni flannel --nodes 2'
 
 log_inf "End Tests"

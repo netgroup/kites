@@ -46,7 +46,9 @@ if [ "$CNI" == "flannel" ]; then
       done
    done
    echo "Creating UDP Packets for Single Pod..."
-   ${KITES_HOME}s/scripts/linux/single-pod-create-udp-traffic-flannel.sh $CNI $N "${bytes[@]}"
+   if $RUN_TEST_SAMENODE; then
+      ${KITES_HOME}/scripts/linux/single-pod-create-udp-traffic-flannel.sh $CNI $N "${bytes[@]}"
+   fi
 else
    echo "Creating UDP Packet for DaemonSet..."
    
@@ -75,7 +77,6 @@ else
       done
    done
    if $RUN_TEST_SAMENODE; then
-      echo "Creating Single POD and UDP Packet for this..."
       ${KITES_HOME}/scripts/linux/single-pod-create-udp-traffic.sh "$CNI" "$N" "$RUN_TEST_SAME" "$RUN_TEST_SAMENODE" "$RUN_TEST_DIFF" "${bytes[@]}"
    fi
 fi

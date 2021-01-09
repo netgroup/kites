@@ -13,6 +13,7 @@ CNI=$8
 BASE_FOLDER=/vagrant/ext/kites/pod-shared
 NEW_MAC_ADDR_POD_1=$(sed -e "s/\"//g" <<< $MAC_ADDR_POD_1) 
 
+echo "create UDP pack $IP_ADDR_POD_1 $IP_ADDR_POD_2"
 
 if [ "$CNI" == "calicoIPIP" ] || [ "$CNI" == "calicoVXLAN" ]; then
    NEW_MAC_ADDR_POD_2="0xee, 0xee, 0xee, 0xee, 0xee, 0xee,"

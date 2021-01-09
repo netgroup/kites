@@ -83,6 +83,18 @@ function clean_pod_shared_dir() {
     shopt -u extglob
 }
 
+function clean_cpu_monitoring_dir() {
+    log_inf "Clean dir. ${KITES_HOME}/cpu/"
+    shopt -s extglob
+    GLOBIGNORE='*.gitignore'
+    if [ -d "${KITES_HOME}/cpu/" ]; then
+        cd "${KITES_HOME}/cpu/"
+        rm -rf *
+        log_debug "Removed all file inside ${KITES_HOME}/cpu/"
+    fi
+    shopt -u extglob
+}
+
 function clean_all() {
     log_inf "Clean all environment from data and pods."
     log_debug "Delete daemonset  net-test-ds"
@@ -90,6 +102,7 @@ function clean_all() {
     log_debug "Delete pods net-test-single-pod"
     kubectl delete pods net-test-single-pod -n ${KITES_NAMSPACE_NAME}
     clean_pod_shared_dir
+    clean_cpu_monitoring_dir
 }
 
 function create_pod_list() {
