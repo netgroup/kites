@@ -21,10 +21,9 @@ then
     echo "OUTGOING, TX_TIME, VM_SRC, VM_DEST, POD_SRC, POD_DEST, PPS" > trafgen-tests.csv
     
     # CNI | Tipo di test | ID_EXP | PPS | From VM | To VM | From Pod | To Pod | From IP | To IP | Outgoing | Incoming | Passed | TX Time | RX Time | TIMESTAMP
-    # bytes=(100 1000)
     for byte in "${bytes[@]}"
     do
-        for (( pps=17600; pps<=19000; pps+=200 ))
+        for (( pps=17000; pps<=19000; pps+=200 ))
         do
             /vagrant/ext/kites/scripts/linux/parse-netsniff-test.sh $CNI /vagrant/ext/kites/pod-shared/NETSNIFF-${byte}byte-${pps}pps.txt /vagrant/ext/kites/pod-shared/TRAFGEN-${byte}byte-${pps}pps.txt $N
         done
@@ -35,6 +34,7 @@ then
     do
         /vagrant/ext/kites/scripts/linux/compute-udp-throughput.sh udp_results_${CNI}_${byte}bytes.csv $CNI $byte
     done
+    /vagrant/ext/kites/scripts/linux/compute-cpu-analysis.sh "UDP" $CNI $N "${bytes[@]}"
 fi
 
 if $TCP_TEST
