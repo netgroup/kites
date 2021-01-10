@@ -45,7 +45,7 @@ CLEAN_ALL="false"
 RUN_IPV4_ONLY="true"
 RUN_IPV6_ONLY="false"
 PKT_BYTES=(100)
-PPS_MIN=17600
+PPS_MIN=17000
 PPS_MAX=19000
 PPS_INC=200
 VERBOSITY_LEVEL=5 # default debug level. see in utils/logging.sh
@@ -491,11 +491,13 @@ function parse_test() {
             done
         done
 
-        #${KITES_HOME}/scripts/linux/compute-udp-results.sh netsniff-tests.csv "$CNI" "${bytes[@]}"
         for byte in "${bytes[@]}"; do
             compute_udp_result netsniff-tests.csv "$CNI" $byte
             compute_udp_throughput udp_results_${CNI}_${byte}bytes.csv $CNI $byte
         done
+        if $CPU_TEST; then
+            ${KITES_HOME}/scripts/linux/compute-cpu-analysis.sh "UDP" $CNI $N "${bytes[@]}"
+        fi
     fi
 
     if $TCP_TEST; then
@@ -503,6 +505,9 @@ function parse_test() {
         #TCP TEST FOR PODS AND NODES WITH IPERF3
         ${KITES_HOME}/scripts/linux/parse-iperf-test.sh "$CNI" "${KITES_HOME}/pod-shared/TCP_IPERF_OUTPUT.txt" "$N"
         ${KITES_HOME}/scripts/linux/parse-iperf-test-node.sh "$CNI" "${KITES_HOME}/pod-shared/TCP_IPERF_NODE_OUTPUT.txt" "$N"
+        if $CPU_TEST; then
+            ${KITES_HOME}/scripts/linux/compute-cpu-analysis.sh "TCP" $CNI $N "${bytes[@]}"
+        fi
     fi
 
     log_debug "Removing contents inside ${KITES_HOME}/tests/"
