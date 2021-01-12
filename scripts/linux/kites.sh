@@ -16,7 +16,7 @@ function display_usage() {
     echo "  --nodes             : set the number of nodes in the cluster. Default set =2"
     echo "  --test-type | -t    : set the test-type between: all, tcp, udp. Default set =all"
     echo "  --conf              : set the configuration between: all, samepod, samenode, diffnode. Default set =all"
-    echo "  --clean-all         : remove all experiment data and pods already created."
+    echo "  --clean-all         : remove all experiment data and pods already created (need namespace)."
     echo "  --namespace | -n    : set the namespace name. Default set =kites"
     echo "  --nocpu | -nc       : do not execute CPU monitoing."
     echo "  -4                  : use IPv4 only. Default."
@@ -505,9 +505,9 @@ function parse_test() {
         #TCP TEST FOR PODS AND NODES WITH IPERF3
         ${KITES_HOME}/scripts/linux/parse-iperf-test.sh "$CNI" "${KITES_HOME}/pod-shared/TCP_IPERF_OUTPUT.txt" "$N"
         ${KITES_HOME}/scripts/linux/parse-iperf-test-node.sh "$CNI" "${KITES_HOME}/pod-shared/TCP_IPERF_NODE_OUTPUT.txt" "$N"
-        if $CPU_TEST; then
-            ${KITES_HOME}/scripts/linux/compute-cpu-analysis.sh "TCP" $CNI $N "${bytes[@]}"
-        fi
+        #if $CPU_TEST; then
+            # ${KITES_HOME}/scripts/linux/compute-cpu-analysis.sh "TCP" $CNI $N "${bytes[@]}"
+        #fi
     fi
 
     log_debug "Removing contents inside ${KITES_HOME}/tests/"
