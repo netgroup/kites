@@ -78,7 +78,7 @@ function clean_pod_shared_dir() {
     shopt -s extglob
     GLOBIGNORE='*.gitignore'
     if [ -d "${KITES_HOME}/pod-shared/" ]; then
-        cd "${KITES_HOME}/pod-shared/"
+        cd "${KITES_HOME}/pod-shared/" || { log_error "Failure"; exit 1; }
         rm -rf *
         log_debug "Removed all file inside ${KITES_HOME}/pod-shared/"
     fi
@@ -90,7 +90,7 @@ function clean_cpu_monitoring_dir() {
     shopt -s extglob
     GLOBIGNORE='*.gitignore'
     if [ -d "${KITES_HOME}/cpu/" ]; then
-        cd "${KITES_HOME}/cpu/"
+        cd "${KITES_HOME}/cpu/" || { log_error "Failure"; exit 1; }
         rm -rf *
         log_debug "Removed all file inside ${KITES_HOME}/cpu/"
     fi
@@ -142,22 +142,22 @@ function get_pods_info() {
         }
 
         log_debug "Obtaining pod name. pod number $pod_index."
-        declare -xg "POD_NAME_$pod_index"=$(_jq '.metadata.name')
+        declare -xg "POD_NAME_$pod_index=$(_jq '.metadata.name')"
         declare pod_name=POD_NAME_$pod_index
-        echo "POD_NAME_"$pod_index"="${!pod_name}"" >>${KITES_HOME}/pod-shared/pods_nodes.env
+        echo "POD_NAME_$pod_index=${!pod_name}" >>${KITES_HOME}/pod-shared/pods_nodes.env
 
         log_debug "Obtaining pod IPv4. pod number $pod_index."
         declare -xg "POD_IP_$pod_index=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test" -o json | jq -r ".items[$pod_index-1].status.podIPs[0].ip")"
         declare ip_name=POD_IP_$pod_index
         echo "${!ip_name}"
-        echo "POD_IP_"$pod_index"="${!ip_name}"" >>${KITES_HOME}/pod-shared/pods_nodes.env
+        echo "POD_IP_$pod_index=${!ip_name}" >>${KITES_HOME}/pod-shared/pods_nodes.env
         ip_parsed_pods=$(sed -e "s/\./, /g" <<<${!ip_name})
         declare -xg "IP_$pod_index= $ip_parsed_pods"
 
         log_debug "Obtaining pod IPv6. pod number $pod_index."
         declare -xg "POD_IP6_$pod_index=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test" -o json | jq -r ".items[$pod_index-1].status.podIPs[1].ip")"
         declare ip6_name=POD_IP6_$pod_index
-        echo "POD_IP6_$pod_index="${!ip6_name}"" >>${KITES_HOME}/pod-shared/pods_nodes.env
+        echo "POD_IP6_$pod_index=${!ip6_name}" >>${KITES_HOME}/pod-shared/pods_nodes.env
 
         log_debug "Obtaining pod nodeName. pod number $pod_index."
         declare -xg "POD_HOSTNAME_$pod_index=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test" -o json | jq -r ".items[$pod_index-1].spec.nodeName")"
@@ -178,7 +178,7 @@ function get_pods_info() {
     declare -xg "MAC_ADDR_SINGLE_POD=$(kubectl exec -n ${KITES_NAMSPACE_NAME} -i "$SINGLE_POD_NAME" -- bash -c "${KITES_HOME}/scripts/linux/single-pod-get-mac-address.sh")"
     #echo "MAC_ADDR_SINGLE_POD="$MAC_ADDR_SINGLE_POD"">> ${KITES_HOME}/pod-shared/pods_nodes.env
     declare -xg "SINGLE_POD_IP=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o jsonpath="{.items[0].status.podIPs[0].ip}")"
-    echo "SINGLE_POD_IP=$SINGLE_POD_IP" >>${KITES_HOME}/pod-shared/pods_nodes.env
+    echo "SINGLE_POD_IP=$SINGLE_POD_IP" >>"${KITES_HOME}/pod-shared/pods_nodes.env"
     declare -xg "IP_PARSED_SINGLE_POD=$(sed -e "s/\./, /g" <<<${SINGLE_POD_IP})"
     #echo "IP_PARSED_SINGLE_POD="$IP_PARSED_SINGLE_POD"">> ${KITES_HOME}/pod-shared/pods_nodes.env
     declare -xg "SINGLE_POD_IP6=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o jsonpath="{.items[0].status.podIPs[1].ip}")"
@@ -192,16 +192,16 @@ function get_pods_info() {
             echo "${row}" | base64 --decode | jq -r "${1}"
         }
         log_debug "Obtaining node name. node number $node_index."
-        declare -xg "NODE_NAME_$node_index"=$(_jq '.metadata.name')
+        declare -xg "NODE_NAME_$node_index=$(_jq '.metadata.name')"
         declare node_name=NODE_NAME_$node_index
-        echo "NODE_NAME_$node_index=${!node_name}" >>${KITES_HOME}/pod-shared/pods_nodes.env
+        echo "NODE_NAME_$node_index=${!node_name}" >>"${KITES_HOME}/pod-shared/pods_nodes.env"
 
         for addr in $(kubectl get nodes ${!node_name} -o json | jq -r ".status.addresses[] | @base64"); do
             _jqa() {
                 echo "${addr}" | base64 --decode | jq -r "${1}"
             }
             if [ "$(_jqa '.type')" == "InternalIP" ]; then
-                declare -xg "NODE_IP_$node_index"="$(_jqa '.address')"
+                declare -xg "NODE_IP_$node_index=$(_jqa '.address')"
                 declare node_ip=NODE_IP_$node_index
                 echo "NODE_IP_$node_index=${!node_ip}" >>${KITES_HOME}/pod-shared/pods_nodes.env
             fi
@@ -236,7 +236,7 @@ function exec_tcp_test_between_pods() {
     log_inf "Start execution TCP net test between pods."
     ID_EXP=$1
     CPU_TEST="TCP"
-    cd "${KITES_HOME}/pod-shared"
+    cd "${KITES_HOME}/pod-shared" || { log_error "Failure"; exit 1; }
 
     for ((i = 1; i <= $N; i++)); do
         log_debug "POD $i to other PODS..."
@@ -320,7 +320,7 @@ function exec_udp_test() {
     if $RUN_TEST_SAME || $RUN_TEST_DIFF; then
         for ((i = 1; i <= $N; i++)); do
             declare folder1p_name="FOLDER_POD_$i"
-            cd $BASE_FOLDER/${!folder1p_name}
+            cd $BASE_FOLDER/${!folder1p_name} || { log_error "Failure"; exit 1; }
 
             log_debug "..................POD $i TEST.................."
             log_debug "----------------------------------------------"
@@ -445,7 +445,7 @@ function exec_net_test() {
 
     ###TCP TEST FOR PODS AND NODES WITH IPERF3
     if $TCP_TEST; then
-        cd "${KITES_HOME}/pod-shared"
+        cd "${KITES_HOME}/pod-shared" || { log_error "Failure"; exit 1; }
         echo -e "TCP TEST\n" >TCP_IPERF_OUTPUT.txt
         exec_tcp_test_between_pods "$ID_EXP" "$N" "$RUN_TEST_SAME" "$RUN_TEST_SAMENODE" "$RUN_TEST_DIFF" "$RUN_TEST_CPU"
 
@@ -480,7 +480,7 @@ function parse_test() {
         mkdir -p "${KITES_HOME}/pod-shared/tests/$CNI"
     fi
 
-    cd "${KITES_HOME}/pod-shared/tests/$CNI"
+    cd "${KITES_HOME}/pod-shared/tests/$CNI" || { log_error "Failure"; exit 1; }
 
     if $UDP_TEST; then
         echo "CNI, TEST_TYPE, ID_EXP, BYTE, PPS, VM_SRC, VM_DEST, POD_SRC, POD_DEST, IP_SRC, IP_DEST, OUTGOING, INCOMING, PASSED, TX_TIME, RX_TIME, TIMESTAMP, CONFIG, CONFIG_CODE" >netsniff-tests.csv
@@ -749,5 +749,5 @@ exec_net_test "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE
 parse_test "$CNI" "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU "${PKT_BYTES[@]}"
 
 end=$(date +%s)
-log_inf "KITES stop. Execution time was $(expr "$end" - "$start") seconds."
+log_inf "KITES stop. Execution time was $(("$end" - "$start")) seconds."
 log_debug "Carla is a killer of VMs."

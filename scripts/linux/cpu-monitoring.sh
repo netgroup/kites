@@ -57,20 +57,20 @@ function start_cpu_monitor_node() {
 	if [ ! -d "${KITES_HOME}/cpu/" ]; then
 		log_debug "Directory ${KITES_HOME}/cpu/ doesn't exists."
 		log_debug "Creating: Directory ${KITES_HOME}/cpu/"
-		mkdir -p ${KITES_HOME}/cpu/
+		mkdir -p "${KITES_HOME}/cpu/"
 	fi
 
-	echo $$ >${KITES_HOME}/cpu/cpu-$HOSTNAME-$CPU_TEST-${BYTE}-$CONFIG.pid
+	echo $$ >"${KITES_HOME}/cpu/cpu-$HOSTNAME-$CPU_TEST-${BYTE}-$CONFIG.pid"
 
-	cd ${KITES_HOME}/cpu/
-	echo "PPS, CONFIG, CONFIG_CODE, TEST_TYPE, DATE, CPU-${HOSTNAME}, %" >>cpu-$HOSTNAME-$CPU_TEST-${BYTE}bytes.csv
+	cd "${KITES_HOME}/cpu/" || { log_error "Failure"; exit 1; }
+	echo "PPS, CONFIG, CONFIG_CODE, TEST_TYPE, DATE, CPU-${HOSTNAME}, %" >>"cpu-$HOSTNAME-$CPU_TEST-${BYTE}bytes.csv"
 
 	sleep 2
 	while true; do
 		DATE=$(date "+%Y-%m-%d %H:%M:%S")
 		CPU_USAGE=$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1}')
 		SINGLE_LINE="$PPS, $CONFIG, $CONFIG_CODE, $TEST_TYPE, $DATE, $CPU_USAGE, %"
-		echo $SINGLE_LINE >>cpu-$HOSTNAME-$CPU_TEST-${BYTE}bytes.csv
+		echo "$SINGLE_LINE" >>"cpu-$HOSTNAME-$CPU_TEST-${BYTE}bytes.csv"
 		#top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1"%"}' >> cpu-$HOSTNAME.txt
 		sleep 1
 	done

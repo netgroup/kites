@@ -170,14 +170,16 @@ function create_udp_packet_ipv4() {
     NEW_IP_ADDR_POD_1=$(sed -e "s/[\"\r]//g" <<<$IP_ADDR_POD_1)
     NEW_IP_ADDR_POD_2=$(sed -e "s/[\"\r]//g" <<<$IP_ADDR_POD_2)
 
-    if [ -d "${BASE_FOLDER}/${FOLDER}" ]; then
-        cd ${BASE_FOLDER}/${FOLDER}
-    else
+    if [ ! -d "${BASE_FOLDER}/${FOLDER}" ]; then
         log_debug "Directory ${BASE_FOLDER}/${FOLDER} doesn't exists."
         log_debug "Creating: Directory ${BASE_FOLDER}/${FOLDER}"
-        mkdir -p ${BASE_FOLDER}/${FOLDER} && cd ${BASE_FOLDER}/${FOLDER}
+        mkdir -p "${BASE_FOLDER}/${FOLDER}"
     fi
 
+    cd "${BASE_FOLDER}/${FOLDER}" || {
+        log_error "Failure"
+        exit 1
+    }
 
     echo -n "{
     ${NEW_MAC_ADDR_POD_2}

@@ -16,7 +16,6 @@ log_inf "Start Tests"
 log_inf "Cleanup environment"
 vagrant ssh k8s-master-1.k8s-play.local -- -t 'cd /vagrant/ext/kites/scripts/linux/ && ./kites.sh --clean-all'
 
-
 #WEAVE NET
 cleanup_mount
 log_debug "SETTING WEAVE NET IN ENV.YAML"

@@ -20,7 +20,10 @@ function append_csv_from_iperf() {
     RX_TIME=${16}
     TX_TIME=${17}
     TIMESTAMP=${18}
-    cd ${KITES_HOME}/pod-shared/tests/$CNI
+    cd "${KITES_HOME}/pod-shared/tests/$CNI" || {
+        log_error "Failure"
+        exit 1
+    }
     echo "$CNI, $TEST_TYPE, $ID_EXP, $VM_SRC, $VM_DEST, $POD_SRC, $POD_DEST, $IP_SRC, $IP_DEST, $OUTGOING, $OUT_UNIT, $INCOMING, $INC_UNIT, $THROUGHPUT, $THR_UNIT, $RX_TIME, $TX_TIME, $TIMESTAMP" >>iperf-tests.csv
 }
 
@@ -44,7 +47,10 @@ function append_csv_from_netsniff() {
     CONFIG_CODE=${17}
     OUTGOING=${18}
     TX_TIME=${19}
-    cd ${KITES_HOME}/pod-shared/tests/$CNI
+    cd "${KITES_HOME}/pod-shared/tests/$CNI" || {
+        log_error "Failure"
+        exit 1
+    }
     echo "$CNI, $TEST_TYPE, $ID_EXP, $BYTE, $PPS, $VM_SRC, $VM_DEST, $POD_SRC, $POD_DEST, $IP_SRC, $IP_DEST, $OUTGOING ,$INCOMING, $PASSED, $TX_TIME ,$RX_TIME, $TIMESTAMP, $CONFIG, $CONFIG_CODE" >>netsniff-tests.csv
 }
 
@@ -58,6 +64,9 @@ function append_csv_from_trafgen() {
     POD_SRC=$6
     POD_DEST=$7
     PPS=$8
-    cd ${KITES_HOME}/pod-shared/tests/$CNI
+    cd "${KITES_HOME}/pod-shared/tests/$CNI" || {
+        log_error "Failure"
+        exit 1
+    }
     echo "$OUTGOING, $TX_TIME, $VM_SRC, $VM_DEST, $POD_SRC, $POD_DEST, $PPS" >>trafgen-tests.csv
 }
