@@ -2,6 +2,8 @@
 . utils/logging.sh
 . utils/check-dependencies.sh
 . utils/kubectl.sh
+. utils/trafgen.sh
+
 
 ##
 #   Help function
@@ -226,7 +228,7 @@ function initialize_net_test() {
     get_pods_info
     if $RUN_TEST_UDP; then
         # TODO refactoring this script
-        ${KITES_HOME}/scripts/linux/create-udp-traffic.sh "$CNI" "$N" "$RUN_TEST_SAME" "$RUN_TEST_SAMENODE" "$RUN_TEST_DIFF" "${PKT_BYTES[@]}"
+        create_udp_traffic_ipv4 "$CNI" "$N" "$RUN_TEST_SAME" "$RUN_TEST_SAMENODE" "$RUN_TEST_DIFF" "${PKT_BYTES[@]}"
     fi
 }
 
