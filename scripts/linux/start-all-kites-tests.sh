@@ -30,39 +30,39 @@ sleep 60
 log_debug "START TEST WITH WEAVE NET"
 vagrant ssh k8s-master-1.k8s-play.local -- -t 'cd /vagrant/ext/kites/scripts/linux/ && ./kites.sh --cni weavenet --nodes 2'
 
-# CALICO IPIP IPv6
-cleanup_mount
-log_debug "SETTING CALICO ENV.YAML"
-sed -i 's/no-cni-plugin: true/no-cni-plugin: false/g' env.yaml
-sed -i 's/flannel: true/flannel: false/g' env.yaml
-sed -i 's/weavenet: true/weavenet: false/g' env.yaml
-sed -i 's/calico: false/calico: true/g' env.yaml
-log_debug "SETTING CALICO ENCAPSULATION (IPIP)"
-sed -i 's/CALICO_IPV4POOL_IPIP: false/CALICO_IPV4POOL_IPIP: true/g' env.yaml
-sed -i 's/CALICO_IPV4POOL_VXLAN: true/CALICO_IPV4POOL_VXLAN: false/g' env.yaml
-log_debug "Vagrant quick-setup with CALICO IPIP"
-vagrant provision --provision-with quick-setup
-log_debug "wait 60 seconds"
-sleep 60
-log_debug "START TEST WITH  CALICO IPIP"
-vagrant ssh k8s-master-1.k8s-play.local -- -t 'cd /vagrant/ext/kites/scripts/linux/ && ./kites.sh --cni calicoIPIP6 -t tcp  -6 --nodes 2'
+# # CALICO IPIP IPv6
+# cleanup_mount
+# log_debug "SETTING CALICO ENV.YAML"
+# sed -i 's/no-cni-plugin: true/no-cni-plugin: false/g' env.yaml
+# sed -i 's/flannel: true/flannel: false/g' env.yaml
+# sed -i 's/weavenet: true/weavenet: false/g' env.yaml
+# sed -i 's/calico: false/calico: true/g' env.yaml
+# log_debug "SETTING CALICO ENCAPSULATION (IPIP)"
+# sed -i 's/CALICO_IPV4POOL_IPIP: false/CALICO_IPV4POOL_IPIP: true/g' env.yaml
+# sed -i 's/CALICO_IPV4POOL_VXLAN: true/CALICO_IPV4POOL_VXLAN: false/g' env.yaml
+# log_debug "Vagrant quick-setup with CALICO IPIP"
+# vagrant provision --provision-with quick-setup
+# log_debug "wait 60 seconds"
+# sleep 60
+# log_debug "START TEST WITH  CALICO IPIP"
+# vagrant ssh k8s-master-1.k8s-play.local -- -t 'cd /vagrant/ext/kites/scripts/linux/ && ./kites.sh --cni calicoIPIP6 -t tcp  -6 --nodes 2'
 
-# CALICO VXLAN
-cleanup_mount
-log_debug "SETTING CALICO ENV.YAML"
-sed -i 's/no-cni-plugin: true/no-cni-plugin: false/g' env.yaml
-sed -i 's/flannel: true/flannel: false/g' env.yaml
-sed -i 's/weavenet: true/weavenet: false/g' env.yaml
-sed -i 's/calico: false/calico: true/g' env.yaml
-log_debug "SETTING CALICO ENCAPSULATION (VXLAN)"
-sed -i 's/CALICO_IPV4POOL_IPIP: true/CALICO_IPV4POOL_IPIP: false/g' env.yaml
-sed -i 's/CALICO_IPV4POOL_VXLAN: false/CALICO_IPV4POOL_VXLAN: true/g' env.yaml
-log_debug "Vagrant quick-setup with CALICO VXLAN"
-vagrant provision --provision-with quick-setup
-log_debug "wait 60 seconds"
-sleep 60
-log_debug "START TEST WITH  CALICO VXLAN"
-vagrant ssh k8s-master-1.k8s-play.local -- -t 'cd /vagrant/ext/kites/scripts/linux/ && ./kites.sh --cni calicoVXLAN6 -t tcp -6 --nodes 2'
+# # CALICO VXLAN IPv6
+# cleanup_mount
+# log_debug "SETTING CALICO ENV.YAML"
+# sed -i 's/no-cni-plugin: true/no-cni-plugin: false/g' env.yaml
+# sed -i 's/flannel: true/flannel: false/g' env.yaml
+# sed -i 's/weavenet: true/weavenet: false/g' env.yaml
+# sed -i 's/calico: false/calico: true/g' env.yaml
+# log_debug "SETTING CALICO ENCAPSULATION (VXLAN)"
+# sed -i 's/CALICO_IPV4POOL_IPIP: true/CALICO_IPV4POOL_IPIP: false/g' env.yaml
+# sed -i 's/CALICO_IPV4POOL_VXLAN: false/CALICO_IPV4POOL_VXLAN: true/g' env.yaml
+# log_debug "Vagrant quick-setup with CALICO VXLAN"
+# vagrant provision --provision-with quick-setup
+# log_debug "wait 60 seconds"
+# sleep 60
+# log_debug "START TEST WITH  CALICO VXLAN"
+# vagrant ssh k8s-master-1.k8s-play.local -- -t 'cd /vagrant/ext/kites/scripts/linux/ && ./kites.sh --cni calicoVXLAN6 -t tcp -6 --nodes 2'
 
 # CALICO IPIP
 cleanup_mount
