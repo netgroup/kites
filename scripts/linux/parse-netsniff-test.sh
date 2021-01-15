@@ -41,23 +41,22 @@ declare end_n=$((comb_n - 18))
 
 
 cd /vagrant/ext/kites/pod-shared/tests/$CNI
-echo "im in parse netsniff"
 
 for (( X=0; X<=$end_n; X+=18))
 do
     #echo "X = $X"
     VM_SRC=$(awk 'NR=='$X+3' { print $3}' < $netsniff_input)
-    echo $VM_SRC
+    # echo $VM_SRC
     VM_DEST=$(awk 'NR=='$X+3' { print $6}' < $netsniff_input)
-    echo $VM_DEST 
+    # echo $VM_DEST 
     POD_SRC=$(awk 'NR=='$X+5' { print $3}' < $netsniff_input)
-    echo $POD_SRC
+    # echo $POD_SRC
     POD_DEST=$(awk 'NR=='$X+5' { print $6}' < $netsniff_input)
-    echo $POD_DEST 
+    # echo $POD_DEST 
     IP_SRC=$(awk 'NR=='$X+7' { print $3}' < $netsniff_input)
-    echo $IP_SRC
+    # echo $IP_SRC
     IP_DEST=$(awk 'NR=='$X+7' { print $6}' < $netsniff_input)
-    echo $IP_DEST 
+    # echo $IP_DEST 
     TIMESTAMP=$(awk 'NR=='$X+7' { print $9}' < $netsniff_input)
     #echo $IP_SRC
     ID_EXP=$(awk 'NR=='$X+7' { print $12}' < $netsniff_input)
@@ -67,7 +66,7 @@ do
     PPS=$(awk 'NR=='$X+9' { print $4}' < $netsniff_input)
     #echo $PPS 
     BYTE=$(awk 'NR=='$X+9' { print $7}' < $netsniff_input)
-    echo $PPS 
+    # echo $PPS 
     INCOMING=$(awk 'NR=='$X+13' { print $2}' < $netsniff_input)
     #echo $INCOMING 
     PASSED=$(awk 'NR=='$X+14' { print $2}' < $netsniff_input)
@@ -96,9 +95,9 @@ do
         if [ "$pps" -eq "$PPS" ]; then
             if [ "$vm_src" = "$VM_SRC" ] && [ "$vm_dest" = "$VM_DEST" ] && [ "$pod_src" = "$POD_SRC" ] && [ "$pod_dest" = "$POD_DEST" ]; then
                 OUTGOING=$outgoing
-                echo "outgoing= $OUTGOING"
+                # echo "outgoing= $OUTGOING"
                 TX_TIME=$tx_time
-                echo "txtime = $TX_TIME"
+                # echo "txtime = $TX_TIME"
             fi
         fi
     done < trafgen-tests.csv

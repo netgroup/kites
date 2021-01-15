@@ -15,7 +15,7 @@ IFS=','
 for byte in "${bytes[@]}"
 do
     awk -F"," '$4=='$byte'' $INPUT > bytetemp.csv
-    for (( pps=17600; pps<=19000; pps+=200 ))
+    for (( pps=17000; pps<=19000; pps+=200 ))
     do
         echo $pps
         awk -F"," '$5=='$pps'' bytetemp.csv > temp.csv
@@ -25,27 +25,12 @@ do
         do
             echo "config= ${configs_names[$config]}"
             awk -F, '$19=='$config'' temp.csv > temp${configs_names[$config]}.csv
-            incoming_tot=0
-            outgoing_tot=0
-            n=0
-            while read cni test_type id_exp byte_n pps_n source_vm dest_vm source_pod dest_pod source_ip dest_ip outgoing incoming passed tx_time rx_time timestamp
-            do
-                incoming_tot=$((incoming + incoming_tot))
-                # echo "i have $incoming incoming packets. Total: $incoming_tot"
-                outgoing_tot=$((outgoing + outgoing_tot))
-                # echo "i have $outgoing incoming packets. Total: $outgoing_tot"
-                n=$((n + 1))
-                # echo $n
-            done < temp${configs_names[$config]}.csv
-            incoming_avg=$(calc $incoming_tot/$n)
-            outgoing_avg=$(calc $outgoing_tot/$n)
-            # echo "avg_inc $incoming_avg"
-            # echo "avg_out $outgoing_avg"
+            incoming_avg=$(awk -F',' '{sum+=$13; ++n} END { print sum/n }' < temp${configs_names[$config]}.csv)
+            outgoing_avg=$(awk -F',' '{sum+=$12; ++n} END { print sum/n }' < temp${configs_names[$config]}.csv)
             rxtx_ratio=$(calc $incoming_avg/$outgoing_avg)
             totxpkt=$((pps*10))
             txedtx_ratio=$(calc $outgoing_avg/$totxpkt)
-            real_pktrate=$(calc $totxpkt*$txedtx_ratio)
-            # echo "real_pktrate $real_pktrate"
+            real_pktrate=$(calc $pps*$txedtx_ratio)
             echo "$byte, $pps, $config, ${configs_names[$config]}, $rxtx_ratio, $txedtx_ratio, $real_pktrate" >> udp_results_${CNI}_${byte}bytes.csv
             rm temp${configs_names[$config]}.csv
         done

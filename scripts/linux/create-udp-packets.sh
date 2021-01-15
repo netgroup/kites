@@ -6,9 +6,7 @@ IP_ADDR_POD_2=$4
 BYTE=$5
 BYTE_FILENAME=$5
 FILENAME=$6
-echo "$FILENAME"
 FOLDER=$7
-echo "$FOLDER"
 CNI=$8
 BASE_FOLDER=/vagrant/ext/kites/pod-shared
 NEW_MAC_ADDR_POD_1=$(sed -e "s/\"//g" <<< $MAC_ADDR_POD_1) 
