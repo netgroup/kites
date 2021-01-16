@@ -37,7 +37,7 @@ for byte in "${bytes[@]}"; do
     printf -v columns_comma '%s,' "${columns[@]}"
 
     for i in "${!files[@]}"; do
-        for ((pps = 17000; pps <= 19000; pps += 200)); do
+        for ((pps = $PPS_MIN; pps <= $PPS_MAX; pps += $PPS_INC)); do
             echo ${cpu_avg_a[*]}
             echo "pps, c, config, test_type, cpu_avg, rx/tx, txed/totx" >>"cpu_usage_${files[i]}.csv"
             awk -F"," '$1=='$pps'' ${files[i]}.csv >temp_pps.csv

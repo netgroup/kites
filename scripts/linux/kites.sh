@@ -47,9 +47,10 @@ CLEAN_ALL="false"
 RUN_IPV4_ONLY="true"
 RUN_IPV6_ONLY="false"
 PKT_BYTES=(100)
-PPS_MIN=17000
-PPS_MAX=19000
+PPS_MIN=14000
+PPS_MAX=18000
 PPS_INC=200
+export PPS_MIN PPS_MAX PPS_INC
 VERBOSITY_LEVEL=5 # default debug level. see in utils/logging.sh
 
 ##
@@ -259,7 +260,7 @@ function exec_tcp_test_between_pods() {
                 if [ "$i" -eq "$j" ] && $RUN_TEST_SAME; then
                     start_cpu_monitor_nodes "$N" "SAMEPOD" 0 "${!host1_pod//[$' ']/}" $CPU_TEST "no" "no"
                 elif [ "${!host1_pod}" != "${!host2_pod}" ] && $RUN_TEST_DIFF; then
-                    start_cpu_monitor_nodes "$N" "DIFFNODE" 2 "${!host1_pod//[$' ']/}-TO-${!host2_pod//[$' ']/}" $CPU_TEST "no" "no"
+                    start_cpu_monitor_nodes "$N" "DIFFNODE" 2 "${!host1_pod//[$' ']/}TO${!host2_pod//[$' ']/}" $CPU_TEST "no" "no"
                 fi
             fi
             kctl_exec ${!name1_pod} "${KITES_HOME}/scripts/linux/iperf-test.sh ${!ip1_pod} ${!ip2_pod} ${!host1_pod} ${!host2_pod} ${!name1_pod} ${!name2_pod} $ID_EXP"
@@ -267,11 +268,11 @@ function exec_tcp_test_between_pods() {
                 if [ "$i" -eq "$j" ] && $RUN_TEST_SAME; then
                     stop_cpu_monitor_nodes "$N" "SAMEPOD" 0 "${!host1_pod//[$' ']/}" $CPU_TEST "no" "no"
                 elif [ "${!host1_pod}" != "${!host2_pod}" ] && $RUN_TEST_DIFF; then
-                    stop_cpu_monitor_nodes "$N" "DIFFNODE" 2 "${!host1_pod//[$' ']/}-TO-${!host2_pod//[$' ']/}" $CPU_TEST "no" "no"
+                    stop_cpu_monitor_nodes "$N" "DIFFNODE" 2 "${!host1_pod//[$' ']/}TO${!host2_pod//[$' ']/}" $CPU_TEST "no" "no"
                 fi
             fi
         done
-        if ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" = "${!host1_pod//[$' ']/}" ] && $RUN_TEST_SAMENODE) || ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" != "${!host1_pod//[$' ']/}" ] && $RUN_TEST_DIFF); then
+        if ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" = "${!host1_pod//[$' ']/}" ] && $RUN_TEST_SAMENODE); then
             if $RUN_TEST_CPU; then
                 start_cpu_monitor_nodes "$N" "SAMENODE" 1 "${!host1_pod//[$' ']/}" $CPU_TEST "no" "no"
             fi
@@ -284,6 +285,20 @@ function exec_tcp_test_between_pods() {
             kctl_exec ${!name1_pod} "${KITES_HOME}/scripts/linux/iperf-test.sh ${!ip1_pod} ${!single_pod_ip} ${!host1_pod} $SINGLE_POD_HOSTNAME ${!name1_pod} $SINGLE_POD_NAME $ID_EXP"
             if $RUN_TEST_CPU; then
                 stop_cpu_monitor_nodes "$N" "SAMENODE" 1 "${!host1_pod//[$' ']/}" $CPU_TEST "no" "no"
+            fi
+        elif ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" != "${!host1_pod//[$' ']/}" ] && $RUN_TEST_DIFF); then
+            if $RUN_TEST_CPU; then
+                start_cpu_monitor_nodes "$N" "DIFFNODE" 2 "${!host1_pod//[$' ']/}TO${SINGLE_POD_HOSTNAME//[$' ']/}" $CPU_TEST "no" "no"
+            fi
+
+            if [ "$RUN_IPV4_ONLY" == "true" ]; then
+                declare single_pod_ip="SINGLE_POD_IP"
+            elif [ "$RUN_IPV6_ONLY" == "true" ]; then
+                declare single_pod_ip="SINGLE_POD_IP6"
+            fi
+            kctl_exec ${!name1_pod} "${KITES_HOME}/scripts/linux/iperf-test.sh ${!ip1_pod} ${!single_pod_ip} ${!host1_pod} $SINGLE_POD_HOSTNAME ${!name1_pod} $SINGLE_POD_NAME $ID_EXP"
+            if $RUN_TEST_CPU; then
+                stop_cpu_monitor_nodes "$N" "DIFFNODE" 2 "${!host1_pod//[$' ']/}TO${SINGLE_POD_HOSTNAME//[$' ']/}" $CPU_TEST "no" "no"
             fi
         fi
     done
@@ -503,13 +518,13 @@ function parse_test() {
     fi
 
     if $TCP_TEST; then
-        echo "CNI, TEST_TYPE, ID_EXP, VM_SRC, VM_DEST, POD_SRC, POD_DEST, IP_SRC, IP_DEST, OUTGOING, OUT_UNIT, INCOMING, INC_UNIT, THROUGHPUT, THR_UNIT, TX_TIME, RX_TIME, TIMESTAMP" >iperf-tests.csv
+        echo "CNI, TEST_TYPE, ID_EXP, VM_SRC, VM_DEST, POD_SRC, POD_DEST, IP_SRC, IP_DEST, OUTGOING, OUT_UNIT, INCOMING, INC_UNIT, THROUGHPUT, THR_UNIT, TX_TIME, RX_TIME, TIMESTAMP, CONFIG, CONFIG_CODE" >iperf-tests.csv
         #TCP TEST FOR PODS AND NODES WITH IPERF3
         ${KITES_HOME}/scripts/linux/parse-iperf-test.sh "$CNI" "${KITES_HOME}/pod-shared/TCP_IPERF_OUTPUT.txt" "$N"
         ${KITES_HOME}/scripts/linux/parse-iperf-test-node.sh "$CNI" "${KITES_HOME}/pod-shared/TCP_IPERF_NODE_OUTPUT.txt" "$N"
-        #if $CPU_TEST; then
-            # ${KITES_HOME}/scripts/linux/compute-cpu-analysis.sh "TCP" $CNI $N "${bytes[@]}"
-        #fi
+        if $CPU_TEST; then
+            ${KITES_HOME}/scripts/linux/compute-cpu-analysis-tcp.sh "TCP" $CNI $N
+        fi
     fi
 
     log_debug "Removing contents inside ${KITES_HOME}/tests/"
@@ -577,25 +592,14 @@ function compute_udp_result() {
         configs=("0" "1" "2")
         for config in "${configs[@]}"; do
             awk -F, '$19=='$config'' temp.csv >temp${configs_names[$config]}.csv
-            incoming_tot=0
-            outgoing_tot=0
-            n=0
-            while read cni test_type id_exp byte_n pps_n source_vm dest_vm source_pod dest_pod source_ip dest_ip outgoing incoming passed tx_time rx_time timestamp; do
-                incoming_tot=$((incoming + incoming_tot))
-                #echo "i have $incoming incoming packets. Total: $incoming_tot"
-                outgoing_tot=$((outgoing + outgoing_tot))
-                #echo "i have $outgoing outgoing packets. Total: $outgoing_tot"
-                n=$((n + 1))
-                #echo $n
-            done <temp${configs_names[$config]}.csv
-            incoming_avg=$(calc $incoming_tot/$n)
-            outgoing_avg=$(calc $outgoing_tot/$n)
+            incoming_avg=$(awk -F',' '{sum+=$13; ++n} END { print sum/n }' < temp${configs_names[$config]}.csv)
+            outgoing_avg=$(awk -F',' '{sum+=$12; ++n} END { print sum/n }' < temp${configs_names[$config]}.csv)
             # echo "avg_inc $incoming_avg"
             # echo "avg_out $outgoing_avg"
             rxtx_ratio=$(calc $incoming_avg/$outgoing_avg)
             totxpkt=$((pps * 10))
             txedtx_ratio=$(calc $outgoing_avg/$totxpkt)
-            real_pktrate=$(calc $totxpkt*$txedtx_ratio)
+            real_pktrate=$(calc $pps*$txedtx_ratio)
             # echo "real_pktrate $real_pktrate"
             echo "$byte, $pps, $config, ${configs_names[$config]}, $rxtx_ratio, $txedtx_ratio, $real_pktrate" >>udp_results_${CNI}_${byte}bytes.csv
             rm temp${configs_names[$config]}.csv

@@ -48,5 +48,19 @@ THR_UNIT=$(awk 'NR=='$X+24' { print $8}' < $iperf_input)
 #echo $THR_UNIT 
 TEST_TYPE=$(awk 'NR=='$X+27' { print $1}' < $iperf_input)
 #echo $TEST_TYPE
-append_csv_from_iperf $CNI $TEST_TYPE $ID_EXP $VM_SRC $VM_DEST $POD_SRC $POD_DEST $IP_SRC $IP_DEST $OUTGOING $OUT_UNIT $INCOMING $INC_UNIT $THROUGHPUT $THR_UNIT $TX_TIME $RX_TIME $TIMESTAMP
+if [[ "$POD_SRC" != "$POD_DEST" ]]
+then
+    if [[ "$VM_SRC" != "$VM_DEST" ]]
+    then
+        CONFIG="PodsOnDiffNode"
+        CONFIG_CODE=2
+    else
+        CONFIG="PodsOnSameNode"
+        CONFIG_CODE=1
+    fi
+else
+    CONFIG="SamePod"
+    CONFIG_CODE=0
+fi 
+append_csv_from_iperf $CNI $TEST_TYPE $ID_EXP $VM_SRC $VM_DEST $POD_SRC $POD_DEST $IP_SRC $IP_DEST $OUTGOING $OUT_UNIT $INCOMING $INC_UNIT $THROUGHPUT $THR_UNIT $TX_TIME $RX_TIME $TIMESTAMP $CONFIG $CONFIG_CODE
 done

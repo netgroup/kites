@@ -48,7 +48,9 @@ function create_udp_traffic_ipv4() {
         fi
     else
         log_debug "Creating UDP Packet for DaemonSet..."
-
+        for ((minion_n = 1; minion_n <= $N; minion_n++)); do
+            export IP_$minion_n MAC_ADDR_POD_$minion_n POD_HOSTNAME_$minion_n
+        done
         for byte in "${bytes[@]}"; do
             log_debug "Creating UDP packets with size: $byte bytes"
             for ((i = 1; i <= $N; i++)); do
@@ -146,8 +148,8 @@ function create_udp_traffic_single_pod() {
 }
 
 function create_udp_packet_ipv4() {
-    MAC_ADDR_POD_1=$1
-    MAC_ADDR_POD_2=$2
+    MAC_ADDR_POD_SRC=$1
+    MAC_ADDR_POD_DST=$2
     IP_ADDR_POD_1=$3
     IP_ADDR_POD_2=$4
     BYTE=$5
@@ -159,12 +161,12 @@ function create_udp_packet_ipv4() {
 
     log_debug "create UDP pack $IP_ADDR_POD_1 $IP_ADDR_POD_2"
 
-    NEW_MAC_ADDR_POD_1=$(sed -e "s/\"//g" <<<$MAC_ADDR_POD_1)
+    NEW_MAC_ADDR_POD_SRC=$(sed -e "s/\"//g" <<<$MAC_ADDR_POD_SRC)
     if [ "$CNI" == "calicoIPIP" ] || [ "$CNI" == "calicoVXLAN" ]; then
-        NEW_MAC_ADDR_POD_2="0xee, 0xee, 0xee, 0xee, 0xee, 0xee,"
+        NEW_MAC_ADDR_POD_DST="0xee, 0xee, 0xee, 0xee, 0xee, 0xee,"
     else
-        NEW_MAC_ADDR_POD_2=$(sed -e "s/\"//g" <<<$MAC_ADDR_POD_2)
-        NEW_MAC_ADDR_POD_2=$(sed -e "s/^ *//g" <<<$NEW_MAC_ADDR_POD_2)
+        NEW_MAC_ADDR_POD_DST=$(sed -e "s/\"//g" <<<$MAC_ADDR_POD_DST)
+        NEW_MAC_ADDR_POD_DST=$(sed -e "s/^ *//g" <<<$NEW_MAC_ADDR_POD_DST)
     fi
 
     NEW_IP_ADDR_POD_1=$(sed -e "s/[\"\r]//g" <<<$IP_ADDR_POD_1)
@@ -182,8 +184,8 @@ function create_udp_packet_ipv4() {
     }
 
     echo -n "{
-    ${NEW_MAC_ADDR_POD_2}
-    ${NEW_MAC_ADDR_POD_1}
+    ${NEW_MAC_ADDR_POD_DST}
+    ${NEW_MAC_ADDR_POD_SRC}
     0x08, 0x00,
     0b01000101, 0,
     const16(46),
