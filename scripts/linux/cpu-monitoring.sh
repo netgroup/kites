@@ -10,7 +10,11 @@ function start_cpu_monitor_nodes() {
 	BYTE=$6
 	PPS=$7
 	log_inf "Start CPU monitoring from master."
-	${KITES_HOME}/scripts/linux/start-cpu-monitoring.sh "$CONFIG" $CONFIG_CODE "$TEST_TYPE" $CPU_TEST $BYTE $PPS &
+	if [ $PPS == "NO_POD" ]; then
+		sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@k8s-master-1.k8s-play.local "${KITES_HOME}/scripts/linux/start-cpu-monitoring.sh \"$CONFIG\" $CONFIG_CODE \"$TEST_TYPE\" \"$CPU_TEST\" \"$BYTE\" $PPS" &
+	else
+		${KITES_HOME}/scripts/linux/start-cpu-monitoring.sh "$CONFIG" $CONFIG_CODE "$TEST_TYPE" $CPU_TEST $BYTE $PPS &
+	fi
 	log_inf "Start CPU monitoring from minions."
 	for ((minion_n = 1; minion_n <= $N; minion_n++)); do
 		sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@k8s-minion-${minion_n}.k8s-play.local "${KITES_HOME}/scripts/linux/start-cpu-monitoring.sh \"$CONFIG\" $CONFIG_CODE \"$TEST_TYPE\" \"$CPU_TEST\" \"$BYTE\" $PPS" &
@@ -27,7 +31,12 @@ function stop_cpu_monitor_nodes() {
 	BYTE=$6
 	PPS=$7
 	pid=$(cat ${KITES_HOME}/cpu/cpu-k8s-master-1-$CPU_TEST-${BYTE}-$CONFIG.pid)
-	if (kill $pid); then
+	if [ $PPS = "NO_POD" ]; then
+		kill_cmd=$(sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@k8s-master-1.k8s-play.local "kill $pid")
+	else
+		kill_cmd=$(kill $pid)
+	fi
+	if ($kill_cmd); then
 		log_inf "Stopped CPU monitoring master"
 		rm ${KITES_HOME}/cpu/cpu-k8s-master-1-$CPU_TEST-${BYTE}-$CONFIG.pid
 	else

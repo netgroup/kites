@@ -53,15 +53,15 @@ if [[ "$POD_SRC" != "$POD_DEST" ]]
 then
     if [[ "$VM_SRC" != "$VM_DEST" ]]
     then
-        CONFIG="PodsOnDiffNode"
+        CONFIG="diffnode"
         CONFIG_CODE=2
     else
-        CONFIG="PodsOnSameNode"
+        CONFIG="samenode"
         CONFIG_CODE=1
     fi
 else
-    CONFIG="SamePod"
+    CONFIG="samepod"
     CONFIG_CODE=0
-fi   
+fi 
 append_csv_from_iperf $CNI $TEST_TYPE $ID_EXP $VM_SRC $VM_DEST $POD_SRC $POD_DEST $IP_SRC $IP_DEST $OUTGOING $OUT_UNIT $INCOMING $INC_UNIT $THROUGHPUT $THR_UNIT $TX_TIME $RX_TIME $TIMESTAMP $CONFIG $CONFIG_CODE
 done

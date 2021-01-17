@@ -83,16 +83,16 @@ do
     then
         if [[ "$VM_SRC" != "$VM_DEST" ]]
         then
-            CONFIG="PodsOnDiffNode"
+            CONFIG="diffnode"
             CONFIG_CODE=2
         else
-            CONFIG="PodsOnSameNode"
+            CONFIG="samenode"
             CONFIG_CODE=1
         fi
     else
-        CONFIG="SamePod"
+        CONFIG="samepod"
         CONFIG_CODE=0
-    fi   
+    fi  
 
     while read outgoing tx_time vm_src vm_dest pod_src pod_dest pps
     do
@@ -105,6 +105,9 @@ do
             fi
         fi
     done < trafgen-tests.csv
+
+    # OUTGOING=$(awk -F',' '$3 ~ /'$VM_SRC'/ && $4 ~ /'$VM_DEST'/ && $5 ~ /'$POD_SRC'/ && $6 ~ /'$POD_DEST'/  { print $1 }' trafgen-tests.csv)
+    # TX_TIME=$(awk -F',' '$3 ~ /'$VM_SRC'/ && $4 ~ /'$VM_DEST'/ && $5 ~ /'$POD_SRC'/ && $6 ~ /'$POD_DEST'/  { print $2 }' trafgen-tests.csv)
 
     #echo $CONFIG
     append_csv_from_netsniff $CNI $TEST_TYPE $ID_EXP $PPS $VM_SRC $VM_DEST $POD_SRC $POD_DEST $IP_SRC $IP_DEST $INCOMING $PASSED $RX_TIME $TIMESTAMP $BYTE $CONFIG $CONFIG_CODE $OUTGOING $TX_TIME
