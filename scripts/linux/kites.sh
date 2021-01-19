@@ -49,9 +49,9 @@ CLEAN_ALL="false"
 RUN_IPV4_ONLY="true"
 RUN_IPV6_ONLY="false"
 PKT_BYTES=(100)
-PPS_MIN=14000
-PPS_MAX=14200
-PPS_INC=200
+PPS_MIN=10000
+PPS_MAX=20000
+PPS_INC=500
 export PPS_MIN PPS_MAX PPS_INC
 VERBOSITY_LEVEL=5 # default debug level. see in utils/logging.sh
 
@@ -653,7 +653,7 @@ function compute_cpu_analysis_udp() {
                 awk -F"," '$1=='$pps'' ${files[i]}.csv >temp_pps.csv
                 for config in "${RUN_CONFIG[@]}"; do
                     awk -F, '$3=='${RUN_CONFIG_CODE[$config]}'' temp_pps.csv >temp${config}.csv
-                    udp_results=$(awk -F, '$2=='$pps' && $3=='${RUN_CONFIG_CODE[$config]}' { print $5","$6 }' /vagrant/ext/kites/pod-shared/tests/${CNI}/udp_results_${CNI}_${byte}bytes.csv)
+                    udp_results=$(awk -F, '$2=='$pps' && $3=='${RUN_CONFIG_CODE[$config]}' { print $5","$6 }' ${KITES_HOME}/pod-shared/tests/${CNI}/udp_results_${CNI}_${byte}bytes.csv)
                     # echo "udp_res = $udp_results"
                     if ([[ ${config} == "samepod" ]] || [[ ${config} == "samenode" ]]); then
 
@@ -672,7 +672,7 @@ function compute_cpu_analysis_udp() {
                                     count=$(awk -F',' 'BEGIN {n=0} $6==100 {n++} END {print n}' <temp_minion.csv)
                                     total=$(awk -F',' '{n++} END {print n}' <temp_minion.csv)
                                     percentage=$(calc 0.75*$total)
-                                    if [[ $count > $percentage ]]; then
+                                    if (( $(echo "$count $percentage" | awk '{print ($1 > $2)}') )); then
                                         cpu_avg=100
                                     else
                                         cpu_avg=$(awk -F',' '{sum+=$6; ++n} END { print sum/n }' <temp_minion.csv)
@@ -734,10 +734,10 @@ function compute_cpu_analysis_tcp() {
         tcp_configs=("POD" "NO_POD")
         for tcp_config in "${!tcp_configs[@]}"; do
             if [ ${tcp_configs[$tcp_config]} == "POD" ]; then
-                awk -F"," '$6 !~ /'NO_POD'/' /vagrant/ext/kites/pod-shared/tests/${CNI}/iperf-tests.csv > temp_tcp_config.csv
+                awk -F"," '$6 !~ /'NO_POD'/' ${KITES_HOME}/pod-shared/tests/${CNI}/iperf-tests.csv > temp_tcp_config.csv
                 awk -F"," '$1 !~ /'NO_POD'/' ${files[i]}.csv >temp_cpu_config.csv
             else 
-                awk -F"," '$6 ~ /'NO_POD'/' /vagrant/ext/kites/pod-shared/tests/${CNI}/iperf-tests.csv > temp_tcp_config.csv
+                awk -F"," '$6 ~ /'NO_POD'/' ${KITES_HOME}/pod-shared/tests/${CNI}/iperf-tests.csv > temp_tcp_config.csv
                 awk -F"," '$1 ~ /'NO_POD'/' ${files[i]}.csv >temp_cpu_config.csv
             fi
             for config in "${RUN_CONFIG[@]}"
@@ -948,5 +948,29 @@ parse_test "$CNI" "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU "${PKT_BYTES[@]
 end=$(date +%s)
 exec_time=$(expr $end - $start)
 exec_min=$(expr $exec_time / 60)
-log_inf "KITES stop. Execution time was $exec_min minutes."
+exec_hour=$(expr $exec_min / 60)
+log_inf "KITES stop. Execution time was $exec_min minutes, $exec_hour hours."
 log_debug "Carla is a killer of VMs."
+log_debug "Saving experiment infos in exp_info.txt"
+cd $KITES_HOME/tests/$CNI
+echo " "Setup parameters:"
+     " KITES_HOME=${KITES_HOME}"
+     " KITES_NAMSPACE_NAME=${KITES_NAMSPACE_NAME}"
+     " N=${N}"
+     " RUN_TEST_TCP=${RUN_TEST_TCP}"
+     " RUN_TEST_UDP=${RUN_TEST_UDP}"
+     " RUN_TEST_SAME=${RUN_TEST_SAME}"
+     " RUN_TEST_SAMENODE=${RUN_TEST_SAMENODE}"
+     " RUN_TEST_DIFF=${RUN_TEST_DIFF}"
+     " RUN_CONFIG=${RUN_CONFIG[*]}"
+     " RUN_CONFIG_CODE=${RUN_CONFIG_CODE[*]}"    
+     " RUN_TEST_CPU=${RUN_TEST_CPU}"
+     " CLEAN_ALL=${CLEAN_ALL}"
+     " RUN_IPV4_ONLY=${RUN_IPV4_ONLY}"
+     " RUN_IPV6_ONLY=${RUN_IPV6_ONLY}"
+     " PKT_BYTES=${PKT_BYTES[*]}"
+     " PPS_MIN=${PPS_MIN}"
+     " PPS_MAX=${PPS_MAX}"
+     " PPS_INC=${PPS_INC}"
+     " VERBOSITY_LEVEL=${VERBOSITY_LEVEL}"" >>exp_info.txt
+echo "KITES stop. Execution time was $exec_min minutes, $exec_hour hours.">>exp_info.txt
