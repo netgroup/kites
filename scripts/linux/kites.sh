@@ -49,10 +49,12 @@ CLEAN_ALL="false"
 RUN_IPV4_ONLY="true"
 RUN_IPV6_ONLY="false"
 PKT_BYTES=(100)
-PPS_MIN=10000
-PPS_MAX=20000
+PPS_MIN=14500
+PPS_MAX=15000
 PPS_INC=500
 export PPS_MIN PPS_MAX PPS_INC
+repeatable="false"
+EXP_N=0
 VERBOSITY_LEVEL=5 # default debug level. see in utils/logging.sh
 
 ##
@@ -323,6 +325,7 @@ function exec_udp_test() {
         declare -x FOLDER_POD_$minion_n=$folder_pod
     done
 
+    
     log_debug "Copy Pod-Shared on Root of the PODS"
     for ((minion_n = 1; minion_n <= $N; minion_n++)); do
         declare name1_pod="POD_NAME_$minion_n"
@@ -336,7 +339,7 @@ function exec_udp_test() {
         for ((i = 1; i <= $N; i++)); do
             declare folder1p_name="FOLDER_POD_$i"
             cd $BASE_FOLDER/${!folder1p_name} || { log_error "Failure"; exit 1; }
-
+            log_debug "$ID_EXP"
             log_debug "..................POD $i TEST.................."
             log_debug "----------------------------------------------"
             for ((j = 1; j <= $N; j++)); do
@@ -353,7 +356,7 @@ function exec_udp_test() {
                     fi
                     kctl_exec ${!name1_pod} "${KITES_HOME}/scripts/linux/netsniff-test.sh samePod$i-${BYTE}byte.pcap ${!ip1_pod} ${!ip1_pod} ${!host1_pod} ${!host1_pod} ${!name1_pod} ${!name1_pod} ${!folder1p_name} $BYTE $PPS $ID_EXP" &
                     sleep 2 &&
-                        kctl_exec ${!name1_pod} "${KITES_HOME}/scripts/linux/trafgen-test.sh samePod$i-${BYTE}byte.cfg ${!ip1_pod} ${!ip1_pod} ${!host1_pod} ${!host1_pod} ${!name1_pod} ${!name1_pod} ${!folder1p_name} $BYTE $PPS"
+                        kctl_exec ${!name1_pod} "${KITES_HOME}/scripts/linux/trafgen-test.sh samePod$i-${BYTE}byte.cfg ${!ip1_pod} ${!ip1_pod} ${!host1_pod} ${!host1_pod} ${!name1_pod} ${!name1_pod} ${!folder1p_name} $BYTE $PPS $ID_EXP"
                     if $RUN_TEST_CPU; then
                         stop_cpu_monitor_nodes $N "samepod" 0 "${!host1_pod//[$' ']/}" $CPU_TEST $BYTE $PPS
                     fi
@@ -363,7 +366,7 @@ function exec_udp_test() {
                     fi
                     kctl_exec ${!name1_pod} "${KITES_HOME}/scripts/linux/netsniff-test.sh pod${j}ToPod${i}-${BYTE}byte.pcap ${!ip2_pod} ${!ip1_pod} ${!host2_pod} ${!host1_pod} ${!name2_pod} ${!name1_pod} ${!folder1p_name} $BYTE $PPS $ID_EXP" &
                     sleep 2 &&
-                        kctl_exec ${!name2_pod} "${KITES_HOME}/scripts/linux/trafgen-test.sh pod${j}ToPod${i}-${BYTE}byte.cfg ${!ip2_pod} ${!ip1_pod} ${!host2_pod} ${!host1_pod} ${!name2_pod} ${!name1_pod} ${!folder2p_name} $BYTE $PPS"
+                        kctl_exec ${!name2_pod} "${KITES_HOME}/scripts/linux/trafgen-test.sh pod${j}ToPod${i}-${BYTE}byte.cfg ${!ip2_pod} ${!ip1_pod} ${!host2_pod} ${!host1_pod} ${!name2_pod} ${!name1_pod} ${!folder2p_name} $BYTE $PPS $ID_EXP"
                     if $RUN_TEST_CPU; then
                         stop_cpu_monitor_nodes $N "diffnode" 2 "${!host2_pod//[$' ']/}TO${!host1_pod//[$' ']/}" $CPU_TEST $BYTE $PPS
                     fi
@@ -383,7 +386,7 @@ function exec_udp_test() {
             fi
             kctl_exec $SINGLE_POD_NAME "${KITES_HOME}/scripts/linux/netsniff-test.sh singlePodToSinglePod-${BYTE}byte.pcap $SINGLE_POD_IP $SINGLE_POD_IP $SINGLE_POD_HOSTNAME $SINGLE_POD_HOSTNAME $SINGLE_POD_NAME $SINGLE_POD_NAME $FOLDER_SINGLE_POD $BYTE $PPS $ID_EXP" &
             sleep 2 &&
-                kctl_exec $SINGLE_POD_NAME "${KITES_HOME}/scripts/linux/trafgen-test.sh singlePodToSinglePod-${BYTE}byte.cfg $SINGLE_POD_IP $SINGLE_POD_IP $SINGLE_POD_HOSTNAME $SINGLE_POD_HOSTNAME $SINGLE_POD_NAME $SINGLE_POD_NAME $FOLDER_SINGLE_POD $BYTE $PPS"
+                kctl_exec $SINGLE_POD_NAME "${KITES_HOME}/scripts/linux/trafgen-test.sh singlePodToSinglePod-${BYTE}byte.cfg $SINGLE_POD_IP $SINGLE_POD_IP $SINGLE_POD_HOSTNAME $SINGLE_POD_HOSTNAME $SINGLE_POD_NAME $SINGLE_POD_NAME $FOLDER_SINGLE_POD $BYTE $PPS $ID_EXP"
             if $RUN_TEST_CPU; then
                 stop_cpu_monitor_nodes $N "samepod" 0 "$SINGLE_POD_HOSTNAME" $CPU_TEST $BYTE $PPS
             fi
@@ -404,7 +407,7 @@ function exec_udp_test() {
                 fi
                 kctl_exec ${!name1_pod} "${KITES_HOME}/scripts/linux/netsniff-test.sh singlePodToPod$minions_n-${BYTE}byte.pcap $SINGLE_POD_IP ${!ip1_pod} $SINGLE_POD_HOSTNAME ${!host1_pod} $SINGLE_POD_NAME ${!name1_pod} ${!folder1p_name} $BYTE $PPS $ID_EXP" &
                 sleep 2 &&
-                    kctl_exec $SINGLE_POD_NAME "${KITES_HOME}/scripts/linux/trafgen-test.sh singlePodToPod$minions_n-${BYTE}byte.cfg $SINGLE_POD_IP ${!ip1_pod} $SINGLE_POD_HOSTNAME ${!host1_pod} $SINGLE_POD_NAME ${!name1_pod} $FOLDER_SINGLE_POD $BYTE $PPS"
+                    kctl_exec $SINGLE_POD_NAME "${KITES_HOME}/scripts/linux/trafgen-test.sh singlePodToPod$minions_n-${BYTE}byte.cfg $SINGLE_POD_IP ${!ip1_pod} $SINGLE_POD_HOSTNAME ${!host1_pod} $SINGLE_POD_NAME ${!name1_pod} $FOLDER_SINGLE_POD $BYTE $PPS $ID_EXP"
                 if $RUN_TEST_CPU; then
                     if [ "${SINGLE_POD_HOSTNAME//[$' ']/}" = "${!host1_pod//[$' ']/}" ]; then
                         stop_cpu_monitor_nodes $N "samenode" 1 "${!host1_pod//[$' ']/}" $CPU_TEST $BYTE $PPS
@@ -437,26 +440,31 @@ function exec_net_test() {
     RUN_TEST_SAMENODE=$5
     RUN_TEST_DIFF=$6
     RUN_TEST_CPU=$7
-    shift 7
+    ID_EXP=$8
+    shift 8
     bytes=("$@")
-    ID_EXP=exp-1 # TODO make it configurable
+
+
     log_debug "${bytes[*]}"
     if $UDP_TEST; then
         log_debug "UDP TEST"
+        log_debug "$ID_EXP"
         for byte in "${bytes[@]}"; do
             log_debug "$byte $PPS_MIN $PPS_MAX $PPS_INC $pps"
             for ((pps = $PPS_MIN; pps <= $PPS_MAX; pps += $PPS_INC)); do
+                log_debug "$byte bytes."
                 log_debug "____________________________________________________"
                 log_debug "TRAFFIC LOAD: ${pps}pps "
                 log_debug "____________________________________________________"
                 exec_udp_test $pps $byte $ID_EXP $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
-                ${KITES_HOME}/scripts/linux/merge-udp-test.sh $pps $byte $N
+                ${KITES_HOME}/scripts/linux/merge-udp-test.sh $pps $byte $N $RUN_TEST_SAMENODE
             done
         done
     fi
 
     ###TCP TEST FOR PODS AND NODES WITH IPERF3
     if $TCP_TEST; then
+        log_debug "TCP TEST"
         cd "${KITES_HOME}/pod-shared" || { log_error "Failure"; exit 1; }
         echo -e "TCP TEST\n" >TCP_IPERF_OUTPUT.txt
         exec_tcp_test_between_pods "$ID_EXP" "$N" "$RUN_TEST_SAME" "$RUN_TEST_SAMENODE" "$RUN_TEST_DIFF" "$RUN_TEST_CPU"
@@ -481,8 +489,9 @@ function parse_test() {
     TCP_TEST=$3
     UDP_TEST=$4
     RUN_CPU_TEST=$5
+    ID_EXP=$6
 
-    shift 5
+    shift 6
     bytes=("$@")
     log_debug "${bytes[@]}"
 
@@ -491,26 +500,40 @@ function parse_test() {
         log_debug "Creating: Directory ${KITES_HOME}/pod-shared/tests/$CNI"
         mkdir -p "${KITES_HOME}/pod-shared/tests/$CNI"
     fi
+    
+    if [ $ID_EXP == "exp-0" ] || [ $ID_EXP == "exp-1" ]; then
+        log_debug "Removing contents inside ${KITES_HOME}/tests/"
+        rm -rf "${KITES_HOME}/tests/${CNI}"
+    fi
+
+    if [ ! -d "${KITES_HOME}/tests/${CNI}/${ID_EXP}" ]; then
+        log_debug "Directory ${KITES_HOME}/tests/${CNI}/${ID_EXP} doesn't exists."
+        log_debug "Creating: Directory ${KITES_HOME}/tests/${CNI}/${ID_EXP}/"
+        mkdir -p ${KITES_HOME}/tests/${CNI}/${ID_EXP}
+    fi
 
     cd "${KITES_HOME}/pod-shared/tests/$CNI" || { log_error "Failure"; exit 1; }
 
     if $UDP_TEST; then
+        log_debug "Parsing UDP TEST into netsniff-test"
         echo "CNI, TEST_TYPE, ID_EXP, BYTE, PPS, VM_SRC, VM_DEST, POD_SRC, POD_DEST, IP_SRC, IP_DEST, OUTGOING, INCOMING, PASSED, TX_TIME, RX_TIME, TIMESTAMP, CONFIG, CONFIG_CODE" >netsniff-tests.csv
         echo "OUTGOING, TX_TIME, VM_SRC, VM_DEST, POD_SRC, POD_DEST, PPS" >trafgen-tests.csv
 
         # CNI | Tipo di test | ID_EXP | PPS | From VM | To VM | From Pod | To Pod | From IP | To IP | Outgoing | Incoming | Passed | TX Time | RX Time | TIMESTAMP
         for byte in "${bytes[@]}"; do
             for ((pps = ${PPS_MIN}; pps <= ${PPS_MAX}; pps += ${PPS_INC})); do
-                ${KITES_HOME}/scripts/linux/parse-netsniff-test.sh "$CNI" ${KITES_HOME}/pod-shared/NETSNIFF-${byte}byte-${pps}pps.txt ${KITES_HOME}/pod-shared/TRAFGEN-${byte}byte-${pps}pps.txt "$N"
+                ${KITES_HOME}/scripts/linux/parse-netsniff-test.sh "$CNI" ${KITES_HOME}/pod-shared/NETSNIFF-${byte}byte-${pps}pps.txt ${KITES_HOME}/pod-shared/TRAFGEN-${byte}byte-${pps}pps.txt "$ID_EXP"
             done
         done
 
+        log_debug "Computing results of UDP test"
         for byte in "${bytes[@]}"; do
             compute_udp_result netsniff-tests.csv "$CNI" $byte
             compute_udp_throughput udp_results_${CNI}_${byte}bytes.csv $CNI $byte
         done
         if $RUN_CPU_TEST; then
-            compute_cpu_analysis_udp "UDP" $CNI $N "${bytes[@]}"
+            log_debug "Computing CPU analysis of UDP test"
+            compute_cpu_analysis_udp "UDP" $CNI $N $ID_EXP "${bytes[@]}"
         fi
     fi
 
@@ -524,17 +547,10 @@ function parse_test() {
         fi
     fi
 
-    log_debug "Removing contents inside ${KITES_HOME}/tests/"
-    rm -rf "${KITES_HOME}/tests/${CNI}"
-
-    if [ ! -d "${KITES_HOME}/tests/" ]; then
-        log_debug "Directory ${KITES_HOME}/tests/ doesn't exists."
-        log_debug "Creating: Directory ${KITES_HOME}/tests/"
-        mkdir -p ${KITES_HOME}/tests/
-    fi
+    
 
     log_debug "Moving results in ${KITES_HOME}/tests/"
-    mv "${KITES_HOME}/pod-shared/tests/${CNI}" "${KITES_HOME}/tests/"
+    mv "${KITES_HOME}/pod-shared/tests/${CNI}" "${KITES_HOME}/tests/${CNI}/${ID_EXP}"
 
 }
 
@@ -614,7 +630,8 @@ function compute_cpu_analysis_udp() {
     CPU_TEST=$1
     CNI=$2
     N=$3
-    shift 3
+    ID_EXP=$4
+    shift 4
     bytes=("$@")
 
     cd /vagrant/ext/kites/cpu
@@ -693,6 +710,7 @@ function compute_cpu_analysis_udp() {
         echo ${cpu_file[*]}
         paste -d, ${cpu_file[*]} | cut -d, -f 1,2,3,4,"${columns_comma%,}" >>cpu-usage-${CNI}-${CPU_TEST}-${byte}bytes.csv
         rm ${cpu_file[*]}
+        mv cpu-usage-${CNI}-${CPU_TEST}-${byte}bytes.csv ${KITES_HOME}/tests/${CNI}/${ID_EXP}/
     done
     cd -
 }
@@ -786,6 +804,7 @@ function compute_cpu_analysis_tcp() {
     echo ${cpu_file[*]}
     paste -d, ${cpu_file[*]} | cut -d, -f 1,2,3,4,"${columns_comma%,}" >>cpu-usage-${CNI}-${CPU_TEST}.csv
     rm ${cpu_file[*]} 
+    mv cpu-usage-${CNI}-${CPU_TEST}.csv ${KITES_HOME}/tests/${CNI}/${ID_EXP}
     cd -
 }
 
@@ -810,6 +829,8 @@ function print_all_setup_parameters() {
     log_debug " PPS_MAX=${PPS_MAX}"
     log_debug " PPS_INC=${PPS_INC}"
     log_debug " VERBOSITY_LEVEL=${VERBOSITY_LEVEL}"
+    log_debug " repeatable=${repeatable}"
+    log_debug " number of repetitions=${EXP_N}"
 }
 
 #   Parse arguments
@@ -908,6 +929,13 @@ while [ $# -gt 0 ]; do
         done
         ;;
 
+    --repeat | -r)
+        # shift
+        repeatable="true"
+        EXP_N=$2
+        echo "EXP_N = $EXP_N"
+        ;;
+
     --help | -h)
         display_usage && exit
         ;;
@@ -942,8 +970,23 @@ create_name_space
 
 initialize_net_test "$CNI" "$N" $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF "${PKT_BYTES[@]}"
 
-exec_net_test "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU "${PKT_BYTES[@]}"
-parse_test "$CNI" "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU "${PKT_BYTES[@]}"
+if $retpeatable; then
+    for ((exp_n = 1; exp_n <= $EXP_N; exp_n++)); do
+        log_debug "Starting $exp_n experiment"
+        ID_EXP=exp-$exp_n
+        RUN_TEST_TCP="false"
+        exec_net_test "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU $ID_EXP "${PKT_BYTES[@]}"
+        parse_test "$CNI" "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU $ID_EXP "${PKT_BYTES[@]}"
+        cd ${KITES_HOME}/pod-shared
+        shopt -s globstar
+        rm -f -- **/*.txt
+    done
+else
+    ID_EXP=exp-0
+    exec_net_test "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU $exp_n "${PKT_BYTES[@]}"
+    parse_test "$CNI" "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU $exp_n "${PKT_BYTES[@]}"
+fi
+
 
 end=$(date +%s)
 exec_time=$(expr $end - $start)

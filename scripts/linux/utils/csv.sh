@@ -66,9 +66,10 @@ function append_csv_from_trafgen() {
     POD_SRC=$6
     POD_DEST=$7
     PPS=$8
+    ID_EXP=$9
     cd "${KITES_HOME}/pod-shared/tests/$CNI" || {
         log_error "Failure"
         exit 1
     }
-    echo "$OUTGOING, $TX_TIME, $VM_SRC, $VM_DEST, $POD_SRC, $POD_DEST, $PPS" >>trafgen-tests.csv
+    echo "$OUTGOING, $TX_TIME, $VM_SRC, $VM_DEST, $POD_SRC, $POD_DEST, $PPS, $ID_EXP" >>trafgen-tests.csv
 }
