@@ -4,7 +4,6 @@
 . utils/kubectl.sh
 . utils/trafgen.sh
 
-
 ##
 #   Help function
 ##
@@ -43,7 +42,7 @@ RUN_TEST_SAME="true"
 RUN_TEST_SAMENODE="true"
 RUN_TEST_DIFF="true"
 RUN_CONFIG=("samepod" "samenode" "diffnode")
-declare -A RUN_CONFIG_CODE=( [samepod]=0 [samenode]=1 [diffnode]=2 )
+declare -A RUN_CONFIG_CODE=([samepod]=0 [samenode]=1 [diffnode]=2)
 RUN_TEST_CPU="true"
 CLEAN_ALL="false"
 RUN_IPV4_ONLY="true"
@@ -83,7 +82,10 @@ function clean_pod_shared_dir() {
     shopt -s extglob
     GLOBIGNORE='*.gitignore'
     if [ -d "${KITES_HOME}/pod-shared/" ]; then
-        cd "${KITES_HOME}/pod-shared/" || { log_error "Failure"; exit 1; }
+        cd "${KITES_HOME}/pod-shared/" || {
+            log_error "Failure"
+            exit 1
+        }
         rm -rf *
         log_debug "Removed all file inside ${KITES_HOME}/pod-shared/"
     fi
@@ -95,7 +97,10 @@ function clean_cpu_monitoring_dir() {
     shopt -s extglob
     GLOBIGNORE='*.gitignore'
     if [ -d "${KITES_HOME}/cpu/" ]; then
-        cd "${KITES_HOME}/cpu/" || { log_error "Failure"; exit 1; }
+        cd "${KITES_HOME}/cpu/" || {
+            log_error "Failure"
+            exit 1
+        }
         rm -rf *
         log_debug "Removed all file inside ${KITES_HOME}/cpu/"
     fi
@@ -186,7 +191,7 @@ function get_pods_info() {
     echo "SINGLE_POD_IP=$SINGLE_POD_IP" >>"${KITES_HOME}/pod-shared/pods_nodes.env"
     declare -xg "IP_PARSED_SINGLE_POD=$(sed -e "s/\./, /g" <<<${SINGLE_POD_IP})"
     #echo "IP_PARSED_SINGLE_POD="$IP_PARSED_SINGLE_POD"">> ${KITES_HOME}/pod-shared/pods_nodes.env
-    if [ "$RUN_IPV6_ONLY" == "true" ]; then 
+    if [ "$RUN_IPV6_ONLY" == "true" ]; then
         declare -xg "SINGLE_POD_IP6=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o jsonpath="{.items[0].status.podIPs[1].ip}")"
         echo "SINGLE_POD_IP6=$SINGLE_POD_IP6" >>${KITES_HOME}/pod-shared/pods_nodes.env
     fi
@@ -243,7 +248,10 @@ function exec_tcp_test_between_pods() {
     log_inf "Start execution TCP net test between pods."
     ID_EXP=$1
     CPU_TEST="TCP"
-    cd "${KITES_HOME}/pod-shared" || { log_error "Failure"; exit 1; }
+    cd "${KITES_HOME}/pod-shared" || {
+        log_error "Failure"
+        exit 1
+    }
 
     for ((i = 1; i <= $N; i++)); do
         log_debug "POD $i to other PODS..."
@@ -261,7 +269,7 @@ function exec_tcp_test_between_pods() {
             declare host1_pod="POD_HOSTNAME_$i"
             declare host2_pod="POD_HOSTNAME_$j"
             log_debug "host1_pod= ${!host1_pod}    host2_pod= ${!host2_pod}"
-            if ([ "$i" -eq "$j" ] && $RUN_TEST_SAME ) || ([ "${!host1_pod}" != "${!host2_pod}" ] && $RUN_TEST_DIFF ); then
+            if ([ "$i" -eq "$j" ] && $RUN_TEST_SAME) || ([ "${!host1_pod}" != "${!host2_pod}" ] && $RUN_TEST_DIFF); then
                 if $RUN_TEST_CPU; then
                     if [ "$i" -eq "$j" ] && $RUN_TEST_SAME; then
                         start_cpu_monitor_nodes "$N" "samepod" 0 "${!host1_pod//[$' ']/}" $CPU_TEST "no" "POD"
@@ -279,11 +287,11 @@ function exec_tcp_test_between_pods() {
                 fi
             fi
         done
-        if ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" = "${!host1_pod//[$' ']/}" ] && $RUN_TEST_SAMENODE ) || ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" != "${!host1_pod//[$' ']/}" ] && $RUN_TEST_DIFF); then
+        if ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" = "${!host1_pod//[$' ']/}" ] && $RUN_TEST_SAMENODE) || ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" != "${!host1_pod//[$' ']/}" ] && $RUN_TEST_DIFF); then
             if $RUN_TEST_CPU; then
-                if ( [ "${SINGLE_POD_HOSTNAME//[$' ']/}" = "${!host1_pod//[$' ']/}" ] && $RUN_TEST_SAMENODE ); then
+                if ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" = "${!host1_pod//[$' ']/}" ] && $RUN_TEST_SAMENODE); then
                     start_cpu_monitor_nodes "$N" "samenode" 1 "${!host1_pod//[$' ']/}" $CPU_TEST "no" "POD"
-                elif ( [ "${SINGLE_POD_HOSTNAME//[$' ']/}" != "${!host1_pod//[$' ']/}" ] && $RUN_TEST_DIFF ); then
+                elif ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" != "${!host1_pod//[$' ']/}" ] && $RUN_TEST_DIFF); then
                     start_cpu_monitor_nodes "$N" "diffnode" 2 "${!host1_pod//[$' ']/}TO${SINGLE_POD_HOSTNAME//[$' ']/}" $CPU_TEST "no" "POD"
                 fi
             fi
@@ -294,11 +302,11 @@ function exec_tcp_test_between_pods() {
                 declare single_pod_ip="SINGLE_POD_IP6"
             fi
             kctl_exec ${!name1_pod} "${KITES_HOME}/scripts/linux/iperf-test.sh ${!ip1_pod} ${!single_pod_ip} ${!host1_pod} $SINGLE_POD_HOSTNAME ${!name1_pod} $SINGLE_POD_NAME $ID_EXP"
-            
+
             if $RUN_TEST_CPU; then
-                if ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" = "${!host1_pod//[$' ']/}" ] && $RUN_TEST_SAMENODE ); then
+                if ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" = "${!host1_pod//[$' ']/}" ] && $RUN_TEST_SAMENODE); then
                     stop_cpu_monitor_nodes "$N" "samenode" 1 "${!host1_pod//[$' ']/}" $CPU_TEST "no" "POD"
-                elif ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" != "${!host1_pod//[$' ']/}" ] && $RUN_TEST_DIFF ); then
+                elif ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" != "${!host1_pod//[$' ']/}" ] && $RUN_TEST_DIFF); then
                     stop_cpu_monitor_nodes "$N" "diffnode" 2 "${!host1_pod//[$' ']/}TO${SINGLE_POD_HOSTNAME//[$' ']/}" $CPU_TEST "no" "POD"
                 fi
             fi
@@ -325,7 +333,6 @@ function exec_udp_test() {
         declare -x FOLDER_POD_$minion_n=$folder_pod
     done
 
-    
     log_debug "Copy Pod-Shared on Root of the PODS"
     for ((minion_n = 1; minion_n <= $N; minion_n++)); do
         declare name1_pod="POD_NAME_$minion_n"
@@ -338,7 +345,10 @@ function exec_udp_test() {
     if $RUN_TEST_SAME || $RUN_TEST_DIFF; then
         for ((i = 1; i <= $N; i++)); do
             declare folder1p_name="FOLDER_POD_$i"
-            cd $BASE_FOLDER/${!folder1p_name} || { log_error "Failure"; exit 1; }
+            cd $BASE_FOLDER/${!folder1p_name} || {
+                log_error "Failure"
+                exit 1
+            }
             log_debug "$ID_EXP"
             log_debug "..................POD $i TEST.................."
             log_debug "----------------------------------------------"
@@ -444,7 +454,6 @@ function exec_net_test() {
     shift 8
     bytes=("$@")
 
-
     log_debug "${bytes[*]}"
     if $UDP_TEST; then
         log_debug "UDP TEST"
@@ -465,7 +474,10 @@ function exec_net_test() {
     ###TCP TEST FOR PODS AND NODES WITH IPERF3
     if $TCP_TEST; then
         log_debug "TCP TEST"
-        cd "${KITES_HOME}/pod-shared" || { log_error "Failure"; exit 1; }
+        cd "${KITES_HOME}/pod-shared" || {
+            log_error "Failure"
+            exit 1
+        }
         echo -e "TCP TEST\n" >TCP_IPERF_OUTPUT.txt
         exec_tcp_test_between_pods "$ID_EXP" "$N" "$RUN_TEST_SAME" "$RUN_TEST_SAMENODE" "$RUN_TEST_DIFF" "$RUN_TEST_CPU"
 
@@ -500,7 +512,7 @@ function parse_test() {
         log_debug "Creating: Directory ${KITES_HOME}/pod-shared/tests/$CNI"
         mkdir -p "${KITES_HOME}/pod-shared/tests/$CNI"
     fi
-    
+
     if [ $ID_EXP == "exp-0" ] || [ $ID_EXP == "exp-1" ]; then
         log_debug "Removing contents inside ${KITES_HOME}/tests/"
         rm -rf "${KITES_HOME}/tests/${CNI}"
@@ -512,7 +524,10 @@ function parse_test() {
         mkdir -p ${KITES_HOME}/tests/${CNI}/${ID_EXP}
     fi
 
-    cd "${KITES_HOME}/pod-shared/tests/$CNI" || { log_error "Failure"; exit 1; }
+    cd "${KITES_HOME}/pod-shared/tests/$CNI" || {
+        log_error "Failure"
+        exit 1
+    }
 
     if $UDP_TEST; then
         log_debug "Parsing UDP TEST into netsniff-test"
@@ -546,8 +561,6 @@ function parse_test() {
             compute_cpu_analysis_tcp "TCP" $CNI $N
         fi
     fi
-
-    
 
     log_debug "Moving results in ${KITES_HOME}/tests/"
     mv "${KITES_HOME}/pod-shared/tests/${CNI}" "${KITES_HOME}/tests/${CNI}/${ID_EXP}"
@@ -606,8 +619,8 @@ function compute_udp_result() {
         # configs=("0" "1" "2")
         for config in "${RUN_CONFIG[@]}"; do
             awk -F, '$19=='${RUN_CONFIG_CODE[$config]}'' temp.csv >temp${config}.csv
-            incoming_avg=$(awk -F',' '{sum+=$13; ++n} END { print sum/n }' < temp${config}.csv)
-            outgoing_avg=$(awk -F',' '{sum+=$12; ++n} END { print sum/n }' < temp${config}.csv)
+            incoming_avg=$(awk -F',' '{sum+=$13; ++n} END { print sum/n }' <temp${config}.csv)
+            outgoing_avg=$(awk -F',' '{sum+=$12; ++n} END { print sum/n }' <temp${config}.csv)
             # echo "avg_inc $incoming_avg"
             # echo "avg_out $outgoing_avg"
             rxtx_ratio=$(calc $incoming_avg/$outgoing_avg)
@@ -623,7 +636,6 @@ function compute_udp_result() {
     rm bytetemp.csv
 
 }
-
 
 function compute_cpu_analysis_udp() {
     calc() { awk "BEGIN{ printf \"%.2f\n\", $* }"; }
@@ -689,7 +701,7 @@ function compute_cpu_analysis_udp() {
                                     count=$(awk -F',' 'BEGIN {n=0} $6==100 {n++} END {print n}' <temp_minion.csv)
                                     total=$(awk -F',' '{n++} END {print n}' <temp_minion.csv)
                                     percentage=$(calc 0.75*$total)
-                                    if (( $(echo "$count $percentage" | awk '{print ($1 > $2)}') )); then
+                                    if (($(echo "$count $percentage" | awk '{print ($1 > $2)}'))); then
                                         cpu_avg=100
                                     else
                                         cpu_avg=$(awk -F',' '{sum+=$6; ++n} END { print sum/n }' <temp_minion.csv)
@@ -715,7 +727,6 @@ function compute_cpu_analysis_udp() {
     cd -
 }
 
-
 function compute_cpu_analysis_tcp() {
     calc() { awk "BEGIN{ printf \"%.2f\n\", $* }"; }
     CPU_TEST=$1
@@ -726,18 +737,16 @@ function compute_cpu_analysis_tcp() {
     # sed -i -e "s/\r//g" *
     IFS=','
 
-
     files[0]=cpu-k8s-master-1-$CPU_TEST-nobytes
     columns[0]=5
-    for (( minion_n=1; minion_n<=$N; minion_n++ ))
-        do
-                INPUT=cpu-from-minion-${minion_n}
-                INPUT_CPU=cpu-k8s-minion-${minion_n}-$CPU_TEST-nobytes
-                files[$minion_n]=$INPUT_CPU
-                minions[$minion_n]=$INPUT
-                n=$((minion_n - 1))
-                col=$((columns[n] + 6))
-                columns[minion_n]=$col
+    for ((minion_n = 1; minion_n <= $N; minion_n++)); do
+        INPUT=cpu-from-minion-${minion_n}
+        INPUT_CPU=cpu-k8s-minion-${minion_n}-$CPU_TEST-nobytes
+        files[$minion_n]=$INPUT_CPU
+        minions[$minion_n]=$INPUT
+        n=$((minion_n - 1))
+        col=$((columns[n] + 6))
+        columns[minion_n]=$col
     done
     n1=$((N + 1))
     columns[n1]=$((columns[N] + 1))
@@ -752,42 +761,38 @@ function compute_cpu_analysis_tcp() {
         tcp_configs=("POD" "NO_POD")
         for tcp_config in "${!tcp_configs[@]}"; do
             if [ ${tcp_configs[$tcp_config]} == "POD" ]; then
-                awk -F"," '$6 !~ /'NO_POD'/' ${KITES_HOME}/pod-shared/tests/${CNI}/iperf-tests.csv > temp_tcp_config.csv
+                awk -F"," '$6 !~ /'NO_POD'/' ${KITES_HOME}/pod-shared/tests/${CNI}/iperf-tests.csv >temp_tcp_config.csv
                 awk -F"," '$1 !~ /'NO_POD'/' ${files[i]}.csv >temp_cpu_config.csv
-            else 
-                awk -F"," '$6 ~ /'NO_POD'/' ${KITES_HOME}/pod-shared/tests/${CNI}/iperf-tests.csv > temp_tcp_config.csv
+            else
+                awk -F"," '$6 ~ /'NO_POD'/' ${KITES_HOME}/pod-shared/tests/${CNI}/iperf-tests.csv >temp_tcp_config.csv
                 awk -F"," '$1 ~ /'NO_POD'/' ${files[i]}.csv >temp_cpu_config.csv
             fi
-            for config in "${RUN_CONFIG[@]}"
-            do
-                awk -F, '$2 ~ /'${config}'/' temp_cpu_config.csv > temp_cpu_${config}.csv
-                if ( [[ ${config} == "samepod" ]] && [[ ${tcp_configs[$tcp_config]} == "POD" ]] ) || ([[ ${config} == "samenode" ]]); then
-                    for (( minion_n=1; minion_n<=$N; minion_n++ ))
-                    do
-                        awk -F"," '$4 ~ /'k8s-minion-$minion_n'/' temp_cpu_${config}.csv > temp_minion.csv
+            for config in "${RUN_CONFIG[@]}"; do
+                awk -F, '$2 ~ /'${config}'/' temp_cpu_config.csv >temp_cpu_${config}.csv
+                if ([[ ${config} == "samepod" ]] && [[ ${tcp_configs[$tcp_config]} == "POD" ]]) || ([[ ${config} == "samenode" ]]); then
+                    for ((minion_n = 1; minion_n <= $N; minion_n++)); do
+                        awk -F"," '$4 ~ /'k8s-minion-$minion_n'/' temp_cpu_${config}.csv >temp_minion.csv
                         if [ -s temp_minion.csv ]; then
-                            cpu_avg=$(awk -F',' '{sum+=$6; ++n} END { print sum/n }' < temp_minion.csv)
+                            cpu_avg=$(awk -F',' '{sum+=$6; ++n} END { print sum/n }' <temp_minion.csv)
                             tcp_thr=$(awk -F',' '$20=='${RUN_CONFIG_CODE[$config]}' && $4 ~ /'k8s-minion-$minion_n'/ {sum+=$14; ++n} END { print sum/n }' temp_tcp_config.csv)
-                            echo "${tcp_configs[$tcp_config]}, ${RUN_CONFIG_CODE[$config]}, ${config}, k8s-minion-$minion_n, $cpu_avg, $tcp_thr" >> cpu_usage_${files[i]}.csv
+                            echo "${tcp_configs[$tcp_config]}, ${RUN_CONFIG_CODE[$config]}, ${config}, k8s-minion-$minion_n, $cpu_avg, $tcp_thr" >>cpu_usage_${files[i]}.csv
                         fi
                     done
                 elif [[ ${config} == "diffnode" ]]; then
-                    for (( m_i=1; m_i<=$N; m_i++ ))
-                    do
-                        for (( m_j=1; m_j<=$N; m_j++ ))
-                        do
+                    for ((m_i = 1; m_i <= $N; m_i++)); do
+                        for ((m_j = 1; m_j <= $N; m_j++)); do
                             if [ $m_j -ne $m_i ]; then
-                                awk -F"," '$4 ~ /'k8s-minion-${m_i}TOk8s-minion-${m_j}'/' temp_cpu_${config}.csv > temp_minion.csv
+                                awk -F"," '$4 ~ /'k8s-minion-${m_i}TOk8s-minion-${m_j}'/' temp_cpu_${config}.csv >temp_minion.csv
                                 count=$(awk -F',' 'BEGIN {n=0} $6==100 {n++} END {print n}' <temp_minion.csv)
                                 total=$(awk -F',' 'BEGIN {n=0} {n++} END {print n}' <temp_minion.csv)
                                 percentage=$(calc 0.75*$total)
                                 if [[ $count > $percentage ]]; then
                                     cpu_avg=100
                                 else
-                                    cpu_avg=$(awk -F',' '{sum+=$6; ++n} END { print sum/n }' < temp_minion.csv)
+                                    cpu_avg=$(awk -F',' '{sum+=$6; ++n} END { print sum/n }' <temp_minion.csv)
                                 fi
                                 tcp_thr=$(awk -F',' '$20=='${RUN_CONFIG_CODE[$config]}' && $4 ~ /'k8s-minion-${m_i}'/ && $5 ~ /'k8s-minion-${m_j}'/ {sum+=$14; ++n} END { print sum/n }' temp_tcp_config.csv)
-                                echo "${tcp_configs[$tcp_config]}, ${RUN_CONFIG_CODE[$config]}, ${config}, k8s-minion-${m_i}TOk8s-minion-${m_j}, $cpu_avg, $tcp_thr" >> cpu_usage_${files[i]}.csv
+                                echo "${tcp_configs[$tcp_config]}, ${RUN_CONFIG_CODE[$config]}, ${config}, k8s-minion-${m_i}TOk8s-minion-${m_j}, $cpu_avg, $tcp_thr" >>cpu_usage_${files[i]}.csv
                             fi
                         done
                     done
@@ -803,7 +808,7 @@ function compute_cpu_analysis_tcp() {
 
     echo ${cpu_file[*]}
     paste -d, ${cpu_file[*]} | cut -d, -f 1,2,3,4,"${columns_comma%,}" >>cpu-usage-${CNI}-${CPU_TEST}.csv
-    rm ${cpu_file[*]} 
+    rm ${cpu_file[*]}
     mv cpu-usage-${CNI}-${CPU_TEST}.csv ${KITES_HOME}/tests/${CNI}/${ID_EXP}
     cd -
 }
@@ -819,7 +824,7 @@ function print_all_setup_parameters() {
     log_debug " RUN_TEST_SAMENODE=${RUN_TEST_SAMENODE}"
     log_debug " RUN_TEST_DIFF=${RUN_TEST_DIFF}"
     log_debug " RUN_CONFIG=${RUN_CONFIG[*]}"
-    log_debug " RUN_CONFIG_CODE=${RUN_CONFIG_CODE[*]}"    
+    log_debug " RUN_CONFIG_CODE=${RUN_CONFIG_CODE[*]}"
     log_debug " RUN_TEST_CPU=${RUN_TEST_CPU}"
     log_debug " CLEAN_ALL=${CLEAN_ALL}"
     log_debug " RUN_IPV4_ONLY=${RUN_IPV4_ONLY}"
@@ -988,7 +993,6 @@ else
     parse_test "$CNI" "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU $ID_EXP "${PKT_BYTES[@]}"
 fi
 
-
 end=$(date +%s)
 exec_time=$(expr $end - $start)
 exec_min=$(expr $exec_time / 60)
@@ -1017,4 +1021,4 @@ echo " "Setup parameters:"
      " PPS_MAX=${PPS_MAX}"
      " PPS_INC=${PPS_INC}"
      " VERBOSITY_LEVEL=${VERBOSITY_LEVEL}"" >>exp_info.txt
-echo "KITES stop. Execution time was $exec_min minutes, $exec_hour hours.">>exp_info.txt
+echo "KITES stop. Execution time was $exec_min minutes, $exec_hour hours." >>exp_info.txt
