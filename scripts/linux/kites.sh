@@ -644,7 +644,7 @@ function compute_cpu_analysis_udp() {
     done
     printf -v minions_comma '%s,' "${minions[@]}"
     for byte in "${bytes[@]}"; do
-        echo "PPS, C, CONFIG, TEST_TYPE, cpu-from-master, ${minions_comma%,}" >"cpu-usage-${CNI}-${CPU_TEST}-${byte}bytes.csv"
+        echo "PPS, C, CONFIG, TEST_TYPE, cpu-from-master, ${minions_comma%,}, rx/tx, txed/totx" >"cpu-usage-${CNI}-${CPU_TEST}-${byte}bytes.csv"
     done
 
     for byte in "${bytes[@]}"; do
@@ -970,7 +970,7 @@ create_name_space
 
 initialize_net_test "$CNI" "$N" $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF "${PKT_BYTES[@]}"
 
-if $retpeatable; then
+if $repeatable; then
     for ((exp_n = 1; exp_n <= $EXP_N; exp_n++)); do
         log_debug "Starting $exp_n experiment"
         ID_EXP=exp-$exp_n
@@ -983,8 +983,9 @@ if $retpeatable; then
     done
 else
     ID_EXP=exp-0
-    exec_net_test "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU $exp_n "${PKT_BYTES[@]}"
-    parse_test "$CNI" "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU $exp_n "${PKT_BYTES[@]}"
+    echo "sono nell'if"
+    exec_net_test "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU $ID_EXP "${PKT_BYTES[@]}"
+    parse_test "$CNI" "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU $ID_EXP "${PKT_BYTES[@]}"
 fi
 
 
