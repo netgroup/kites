@@ -2,6 +2,7 @@
 
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 import sys
 import os
 
@@ -15,9 +16,6 @@ kites_home = "../"
 cni = "weavenet"
 EXP_N = 5
 byte = 100
-pps_min = 13000
-pps_max = 20000
-pps_inc = 500
 N = 3
 rep = EXP_N + 1
 print(cni)
@@ -25,8 +23,8 @@ print(cni)
 total = None
 for exp_n in range(1, rep, 1):
     # define exp name
-    id_exp = "exp-"+str(exp_n)
-    file_name = "cpu-usage-" + cni + "-UDP-" + str(byte) + "bytes.csv"
+    id_exp = 'exp-{}'.format(exp_n)
+    file_name = 'cpu-usage-{}-UDP-{}bytes.csv'.format(cni, byte)
     path = os.path.join(kites_home, "tests", cni, id_exp, file_name)
     df = pd.read_csv(path)
     # remove spurious rows
@@ -43,35 +41,29 @@ for exp_n in range(1, rep, 1):
         total = current.astype(float)
 
 total = total/5
-print(total)
+# print(total)
 print(info_columns)
 total = pd.concat([info_columns, total], axis=1)
 total.columns = total.columns.str.replace(' ', '')
-print(total)
+# print(total)
 # df[0] = df[0].str.strip()
 total['TEST_TYPE'] = total['TEST_TYPE'].str.replace(' ', '')
-print(total)
-
-
+# print(total)
+pps_grouped = total.groupby(['PPS'])
 rows = []
-for pps in range(pps_min, pps_max+pps_inc, pps_inc):
-    print(pps)
-    index_pps = total[total['PPS'] == ''+str(pps)+''].index
-    print(index_pps)
-    pps_df = total.loc[index_pps]
+
+for group_name, pps_df in pps_grouped:
+    # print(group_name)
     print(pps_df)
-    print(list(pps_df.columns.values))
-    n = 1
-    cpu_tx_sum = 0
-    cpu_rx_sum = 0
+    pps_rows = []
+    # filter by TEST_TYPE k8s-minion-XTOk8s-minion-Y
     for minion_i in range(1, N+1, 1):
         for minion_j in range(1, N+1, 1):
             if minion_i != minion_j:
-                string_name = 'k8s-minion-' + \
-                    str(minion_i) + 'TOk8s-minion-' + str(minion_j) + ''
-                print(string_name)
-                row_conf = pps_df[pps_df['TEST_TYPE'] == 'k8s-minion-' +
-                                  str(minion_i) + 'TOk8s-minion-' + str(minion_j) + ''].index
+                string_name = 'k8s-minion-{}TOk8s-minion-{}'.format(
+                    minion_i, minion_j)
+                row_conf = pps_df[pps_df['TEST_TYPE'] == string_name].index
+                # print(string_name, row_conf)
                 col_tx = "cpu-from-minion-"+str(minion_i)
                 col_rx = "cpu-from-minion-"+str(minion_j)
 
@@ -79,19 +71,26 @@ for pps in range(pps_min, pps_max+pps_inc, pps_inc):
                 txedtx = pps_df.loc[row_conf, "txed/totx"].item()
 
                 cpu_tx = pps_df.loc[row_conf, col_tx]
-                cpu_tx_sum = ((cpu_tx_sum + cpu_tx)).item()
                 cpu_rx = pps_df.loc[row_conf, col_rx]
-                cpu_rx_sum = ((cpu_rx_sum + cpu_rx)).item()
-                n = n+1
 
-    cpu_rx_avg = cpu_rx_sum/n
-    cpu_tx_avg = cpu_tx_sum/n
-    rows.append([pps, rxtx, txedtx, cpu_tx_avg, cpu_rx_avg])
+                pps_rows.append([group_name, rxtx, txedtx,
+                                 cpu_tx.item(), cpu_rx.item()])
+
+    pps_diffnodes = pd.DataFrame(pps_rows,
+                                 columns=["PPS", "rx/tx", "txed/totx", "cpu_tx", "cpu_rx"])
+    cpu_rx_avg = pps_diffnodes["cpu_rx"].mean().item()
+    cpu_rx_std = pps_diffnodes["cpu_rx"].std().item()
+    cpu_tx_avg = pps_diffnodes["cpu_tx"].mean().item()
+    cpu_tx_std = pps_diffnodes["cpu_tx"].std().item()
+    print(group_name, rxtx, txedtx, cpu_tx_avg, cpu_rx_avg)
+
+    rows.append([group_name, rxtx, txedtx, cpu_tx_avg,
+                 cpu_tx_std, cpu_rx_avg, cpu_rx_std])
 
 diffnode = pd.DataFrame(
-    rows, columns=["PPS", "rx/tx", "txed/totx", "cpu_tx", "cpu_rx"])
+    rows, columns=["PPS", "rx/tx", "txed/totx", "cpu_tx", "cpu_tx_std", "cpu_rx", "cpu_rx_std"])
 print(diffnode)
-
-#boxplot = df.boxplot()
-#fig = boxplot.get_figure()
-#fig.savefig("output.png")
+plt.figure()
+errorbar = plt.errorbar(diffnode['PPS'], 'cpu_tx', yerr='cpu_tx_std', data=diffnode)
+errorbar_rx = plt.errorbar(diffnode['PPS'], 'cpu_rx', yerr='cpu_rx_std', data=diffnode)
+plt.show()
