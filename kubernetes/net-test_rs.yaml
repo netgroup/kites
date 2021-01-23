@@ -35,7 +35,7 @@ spec:
     spec:
       containers:
         - name: net-test-server
-          image: kitesproject/net-test:latest-dev
+          image: zvfvrv/net-test:devnoicmp
           volumeMounts:
           - name: scripts
             mountPath: /vagrant/ext/kites/scripts/linux/
