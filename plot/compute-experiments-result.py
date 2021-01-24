@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 import os
-
+import re
 # cni=sys.argv[1]
 # EXP_N=sys.argv[2]
 # bytes=sys.argv[3]
@@ -14,34 +14,37 @@ import os
 
 kites_home = "../"
 cni = "weavenet"
-EXP_N = 5
+EXP_N = 0
 byte = 100
 N = 3
-rep = EXP_N + 1
 print(cni)
-
+cni_tests_path = os.path.join(kites_home, "tests", cni)
 total = None
-for exp_n in range(1, rep, 1):
-    # define exp name
-    id_exp = 'exp-{}'.format(exp_n)
-    file_name = 'cpu-usage-{}-UDP-{}bytes.csv'.format(cni, byte)
-    path = os.path.join(kites_home, "tests", cni, id_exp, file_name)
-    df = pd.read_csv(path)
-    # remove spurious rows
-    indexNames = df[df['PPS'] == 'pps'].index
-    current = df.drop(indexNames)
-    if total is None:
-        info_columns = current.iloc[:, [0, 3]]
-    # take the values
-    current = current.iloc[:, 4:10]
-    # take the sum
-    if total is not None:
-        total = (total.astype(float) + current.astype(float))
-    else:
-        total = current.astype(float)
+with os.scandir(cni_tests_path) as listOfEntries:
+    for entry in listOfEntries:
+        if entry.is_dir():
+            exp_match = re.match(r'^exp-(\d+)$', entry.name)
+            if exp_match:
+                exp_n = exp_match.groups()[0]
+                id_exp = entry.name
+                f_name = 'cpu-usage-{}-UDP-{}bytes.csv'.format(cni, byte)
+                path = os.path.join(kites_home, "tests", cni, id_exp, f_name)
+                df = pd.read_csv(path)
+                indexNames = df[df['PPS'] == 'pps'].index
+                current = df.drop(indexNames)
+                if total is None:
+                    info_columns = current.iloc[:, [0, 3]]
+                # take the values
+                current = current.iloc[:, 4:10]
+                # take the sum
+                if total is not None:
+                    total = (total.astype(float) + current.astype(float))
+                else:
+                    total = current.astype(float)
+                EXP_N = EXP_N + 1
 
-total = total/5
-# print(total)
+total = total/EXP_N
+print(total)
 print(info_columns)
 total = pd.concat([info_columns, total], axis=1)
 total.columns = total.columns.str.replace(' ', '')
@@ -67,8 +70,8 @@ for group_name, pps_df in pps_grouped:
                 col_tx = "cpu-from-minion-"+str(minion_i)
                 col_rx = "cpu-from-minion-"+str(minion_j)
 
-                rxtx = pps_df.loc[row_conf, "rx/tx"].item()
-                txedtx = pps_df.loc[row_conf, "txed/totx"].item()
+                rxtx = pps_df.loc[row_conf, "rx/tx"].item() * 100
+                txedtx = pps_df.loc[row_conf, "txed/totx"].item() * 100
 
                 cpu_tx = pps_df.loc[row_conf, col_tx]
                 cpu_rx = pps_df.loc[row_conf, col_rx]
@@ -89,8 +92,12 @@ for group_name, pps_df in pps_grouped:
 
 diffnode = pd.DataFrame(
     rows, columns=["PPS", "rx/tx", "txed/totx", "cpu_tx", "cpu_tx_std", "cpu_rx", "cpu_rx_std"])
-print(diffnode)
+
 plt.figure()
-errorbar = plt.errorbar(diffnode['PPS'], 'cpu_tx', yerr='cpu_tx_std', data=diffnode)
-errorbar_rx = plt.errorbar(diffnode['PPS'], 'cpu_rx', yerr='cpu_rx_std', data=diffnode)
-plt.show()
+errorbar = plt.errorbar(
+    diffnode['PPS'], 'cpu_tx', yerr='cpu_tx_std', data=diffnode)
+errorbar_rx = plt.errorbar(
+    diffnode['PPS'], 'cpu_rx', yerr='cpu_rx_std', data=diffnode)
+errorbar_rx = plt.errorbar(diffnode['PPS'], 'txed/totx',  data=diffnode)
+errorbar_rx = plt.errorbar(diffnode['PPS'], 'rx/tx',  data=diffnode)
+plt.savefig(cni_tests_path+'/fig.png')
