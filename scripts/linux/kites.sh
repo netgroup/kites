@@ -133,8 +133,10 @@ function initialize_pods() {
     #creazione daemonset
     log_debug "Create demonset."
     kubectl apply -n ${KITES_NAMSPACE_NAME} -f ${KITES_HOME}/kubernetes/net-test-dev_ds.yaml
-    log_debug "Create single-pod."
-    kubectl apply -n ${KITES_NAMSPACE_NAME} -f ${KITES_HOME}/kubernetes/net-test-single-pod.yaml
+    if $RUN_TEST_SAMENODE; then
+        log_debug "Create single-pod."
+        kubectl apply -n ${KITES_NAMSPACE_NAME} -f ${KITES_HOME}/kubernetes/net-test-single-pod.yaml
+    fi
     log_inf "Wait until all pods are running."
     kubectl wait -n ${KITES_NAMSPACE_NAME} --for=condition=Ready pods --all --timeout=600s
 }
@@ -182,21 +184,23 @@ function get_pods_info() {
         ((pod_index++))
     done
 
-    log_debug "Obtaining the names, IPs, MAC Addresse of the SinglePOD."
-    declare -xg "SINGLE_POD_NAME=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o jsonpath="{.items[0].metadata.name}")"
-    echo "SINGLE_POD_NAME=$SINGLE_POD_NAME" >>${KITES_HOME}/pod-shared/pods_nodes.env
-    declare -xg "MAC_ADDR_SINGLE_POD=$(kubectl exec -n ${KITES_NAMSPACE_NAME} -i "$SINGLE_POD_NAME" -- bash -c "${KITES_HOME}/scripts/linux/single-pod-get-mac-address.sh")"
-    #echo "MAC_ADDR_SINGLE_POD="$MAC_ADDR_SINGLE_POD"">> ${KITES_HOME}/pod-shared/pods_nodes.env
-    declare -xg "SINGLE_POD_IP=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o jsonpath="{.items[0].status.podIPs[0].ip}")"
-    echo "SINGLE_POD_IP=$SINGLE_POD_IP" >>"${KITES_HOME}/pod-shared/pods_nodes.env"
-    declare -xg "IP_PARSED_SINGLE_POD=$(sed -e "s/\./, /g" <<<${SINGLE_POD_IP})"
-    #echo "IP_PARSED_SINGLE_POD="$IP_PARSED_SINGLE_POD"">> ${KITES_HOME}/pod-shared/pods_nodes.env
-    if [ "$RUN_IPV6_ONLY" == "true" ]; then
-        declare -xg "SINGLE_POD_IP6=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o jsonpath="{.items[0].status.podIPs[1].ip}")"
-        echo "SINGLE_POD_IP6=$SINGLE_POD_IP6" >>${KITES_HOME}/pod-shared/pods_nodes.env
+    if $RUN_TEST_SAMENODE; then
+        log_debug "Obtaining the names, IPs, MAC Addresse of the SinglePOD."
+        declare -xg "SINGLE_POD_NAME=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o jsonpath="{.items[0].metadata.name}")"
+        echo "SINGLE_POD_NAME=$SINGLE_POD_NAME" >>${KITES_HOME}/pod-shared/pods_nodes.env
+        declare -xg "MAC_ADDR_SINGLE_POD=$(kubectl exec -n ${KITES_NAMSPACE_NAME} -i "$SINGLE_POD_NAME" -- bash -c "${KITES_HOME}/scripts/linux/single-pod-get-mac-address.sh")"
+        #echo "MAC_ADDR_SINGLE_POD="$MAC_ADDR_SINGLE_POD"">> ${KITES_HOME}/pod-shared/pods_nodes.env
+        declare -xg "SINGLE_POD_IP=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o jsonpath="{.items[0].status.podIPs[0].ip}")"
+        echo "SINGLE_POD_IP=$SINGLE_POD_IP" >>"${KITES_HOME}/pod-shared/pods_nodes.env"
+        declare -xg "IP_PARSED_SINGLE_POD=$(sed -e "s/\./, /g" <<<${SINGLE_POD_IP})"
+        #echo "IP_PARSED_SINGLE_POD="$IP_PARSED_SINGLE_POD"">> ${KITES_HOME}/pod-shared/pods_nodes.env
+        if [ "$RUN_IPV6_ONLY" == "true" ]; then
+            declare -xg "SINGLE_POD_IP6=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o jsonpath="{.items[0].status.podIPs[1].ip}")"
+            echo "SINGLE_POD_IP6=$SINGLE_POD_IP6" >>${KITES_HOME}/pod-shared/pods_nodes.env
+        fi
+        declare -xg "SINGLE_POD_HOSTNAME=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o json | jq -r ".items[0].spec.nodeName")"
+        echo "SINGLE_POD_HOSTNAME=$SINGLE_POD_HOSTNAME" >>${KITES_HOME}/pod-shared/pods_nodes.env
     fi
-    declare -xg "SINGLE_POD_HOSTNAME=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test-single-pod" -o json | jq -r ".items[0].spec.nodeName")"
-    echo "SINGLE_POD_HOSTNAME=$SINGLE_POD_HOSTNAME" >>${KITES_HOME}/pod-shared/pods_nodes.env
 
     log_debug "Obtaining the names, IPs, MAC Addresse of  worker nodes."
     for row in $(kubectl get nodes --selector='!node-role.kubernetes.io/master' -o json | jq -r ".items[] | @base64"); do
@@ -232,7 +236,6 @@ function initialize_net_test() {
     RUN_TEST_SAME=$4
     RUN_TEST_SAMENODE=$5
     RUN_TEST_DIFF=$6
-
     shift 6
     PKT_BYTES=("$@")
     initialize_pods "$RUN_TEST_SAMENODE"
@@ -502,7 +505,6 @@ function parse_test() {
     UDP_TEST=$4
     RUN_CPU_TEST=$5
     ID_EXP=$6
-
     shift 6
     bytes=("$@")
     log_debug "${bytes[@]}"
@@ -530,7 +532,7 @@ function parse_test() {
     }
 
     if $UDP_TEST; then
-        log_debug "Parsing UDP TEST into netsniff-test"
+        log_debug "Parsing UDP TEST into netsniff-tests"
         echo "CNI, TEST_TYPE, ID_EXP, BYTE, PPS, VM_SRC, VM_DEST, POD_SRC, POD_DEST, IP_SRC, IP_DEST, OUTGOING, INCOMING, PASSED, TX_TIME, RX_TIME, TIMESTAMP, CONFIG, CONFIG_CODE" >netsniff-tests.csv
         echo "OUTGOING, TX_TIME, VM_SRC, VM_DEST, POD_SRC, POD_DEST, PPS" >trafgen-tests.csv
 
@@ -553,6 +555,7 @@ function parse_test() {
     fi
 
     if $TCP_TEST; then
+        log_debug "Parsing TCP TEST into iperf-tests"
         echo "CNI, TEST_TYPE, ID_EXP, VM_SRC, VM_DEST, POD_SRC, POD_DEST, IP_SRC, IP_DEST, OUTGOING, OUT_UNIT, INCOMING, INC_UNIT, THROUGHPUT, THR_UNIT, TX_TIME, RX_TIME, TIMESTAMP, CONFIG, CONFIG_CODE" >iperf-tests.csv
         #TCP TEST FOR PODS AND NODES WITH IPERF3
         ${KITES_HOME}/scripts/linux/parse-iperf-test.sh "$CNI" "${KITES_HOME}/pod-shared/TCP_IPERF_OUTPUT.txt" "$N"
@@ -719,7 +722,6 @@ function compute_cpu_analysis_udp() {
             done
 
         done
-        echo ${cpu_file[*]}
         paste -d, ${cpu_file[*]} | cut -d, -f 1,2,3,4,"${columns_comma%,}" >>cpu-usage-${CNI}-${CPU_TEST}-${byte}bytes.csv
         rm ${cpu_file[*]}
         mv cpu-usage-${CNI}-${CPU_TEST}-${byte}bytes.csv ${KITES_HOME}/tests/${CNI}/${ID_EXP}/
@@ -805,8 +807,6 @@ function compute_cpu_analysis_tcp() {
             rm temp_cpu_config.csv
         done
     done
-
-    echo ${cpu_file[*]}
     paste -d, ${cpu_file[*]} | cut -d, -f 1,2,3,4,"${columns_comma%,}" >>cpu-usage-${CNI}-${CPU_TEST}.csv
     rm ${cpu_file[*]}
     mv cpu-usage-${CNI}-${CPU_TEST}.csv ${KITES_HOME}/tests/${CNI}/${ID_EXP}
@@ -938,7 +938,6 @@ while [ $# -gt 0 ]; do
         # shift
         repeatable="true"
         EXP_N=$2
-        echo "EXP_N = $EXP_N"
         ;;
 
     --help | -h)
@@ -955,6 +954,7 @@ if $CLEAN_ALL; then
     clean_all
 else
     clean_pod_shared_dir
+    clean_cpu_monitoring_dir
 fi
 
 if [ "$CNI" = "" ]; then
@@ -987,11 +987,15 @@ if $repeatable; then
         rm -f -- **/*.txt
     done
 else
-    ID_EXP=exp-0
-    echo "sono nell'if"
+    ID_EXP=exp-$EXP_N
     exec_net_test "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU $ID_EXP "${PKT_BYTES[@]}"
     parse_test "$CNI" "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU $ID_EXP "${PKT_BYTES[@]}"
 fi
+
+for byte in "${PKT_BYTES[@]}"; do
+    log_debug "Creating plot for packets of $byte bytes"
+    python3.7 ${KITES_HOME}/plot/compute-experiments-result.py $CNI $byte $N
+done
 
 end=$(date +%s)
 exec_time=$(expr $end - $start)

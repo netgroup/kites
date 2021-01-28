@@ -22,6 +22,8 @@ do
     # echo $VM_SRC
     VM_DEST=$(awk 'NR=='$X+3' { print $6}' < $trafgen_input)
     # echo $VM_DEST 
+    BYTE=$(awk 'NR=='$X+9' { print $10}' < $trafgen_input)
+
     POD_SRC=$(awk 'NR=='$X+5' { print $3}' < $trafgen_input)
     # echo $POD_SRC
     POD_DEST=$(awk 'NR=='$X+5' { print $6}' < $trafgen_input)
@@ -34,7 +36,7 @@ do
     USEC_TX=$(awk 'NR=='$X+18' { print $4}' < $trafgen_input | sed 's/\(^...\).*/\1/')
     TX_TIME=$SEC_TX.${USEC_TX}
     #echo $TX_TIME 
-    append_csv_from_trafgen $CNI $OUTGOING $TX_TIME $VM_SRC $VM_DEST $POD_SRC $POD_DEST $PPS $ID_EXP
+    append_csv_from_trafgen $CNI $OUTGOING $TX_TIME $VM_SRC $VM_DEST $POD_SRC $POD_DEST $PPS $ID_EXP $BYTE
 done
 
 
@@ -45,7 +47,6 @@ declare end_n=$((comb_n - 18))
 
 
 cd ${KITES_HOME}/pod-shared/tests/$CNI
-echo "im in parse netsniff"
 
 for (( X=0; X<=$end_n; X+=18))
 do
@@ -63,19 +64,19 @@ do
     IP_DEST=$(awk 'NR=='$X+7' { print $6}' < $netsniff_input)
     # echo $IP_DEST 
     TIMESTAMP=$(awk 'NR=='$X+7' { print $9}' < $netsniff_input)
-    #echo $IP_SRC
+    # echo $IP_SRC
     ID_EXP=$(awk 'NR=='$X+7' { print $12}' < $netsniff_input)
-    #echo $IP_DEST 
+    # echo $IP_DEST 
     TEST_TYPE=$(awk 'NR=='$X+9' { print $1}' < $netsniff_input)
-    #echo $TEST_TYPE
+    # echo $TEST_TYPE
     PPS=$(awk 'NR=='$X+9' { print $4}' < $netsniff_input)
-    #echo $PPS 
-    BYTE=$(awk 'NR=='$X+9' { print $7}' < $netsniff_input)
     # echo $PPS 
+    BYTE=$(awk 'NR=='$X+9' { print $7}' < $netsniff_input)
+    # echo $BYTE 
     INCOMING=$(awk 'NR=='$X+13' { print $2}' < $netsniff_input)
-    #echo $INCOMING 
+    # echo $INCOMING 
     PASSED=$(awk 'NR=='$X+14' { print $2}' < $netsniff_input)
-    #echo $PASSED 
+    # echo $PASSED 
     SEC_RX=$(awk 'NR=='$X+17' { print $2}' < $netsniff_input)
     USEC_RX=$(awk 'NR=='$X+17' { print $4}' < $netsniff_input | sed 's/\(^...\).*/\1/')
     RX_TIME=$SEC_RX.${USEC_RX}
@@ -95,20 +96,20 @@ do
         CONFIG_CODE=0
     fi  
 
-    while read outgoing tx_time vm_src vm_dest pod_src pod_dest pps id_exp
-    do
-        if [ "$pps" -eq "$PPS" ]; then
-            if [ "$vm_src" = "$VM_SRC" ] && [ "$vm_dest" = "$VM_DEST" ] && [ "$pod_src" = "$POD_SRC" ] && [ "$pod_dest" = "$POD_DEST" ] && [ "$id_exp" = "$ID_EXP" ]; then
-                OUTGOING=$outgoing
-                # echo "outgoing= $OUTGOING"
-                TX_TIME=$tx_time
-                # echo "txtime = $TX_TIME"
-            fi
-        fi
-    done < trafgen-tests.csv
+    # while read outgoing tx_time vm_src vm_dest pod_src pod_dest pps id_exp
+    # do
+    #     if [ "$pps" -eq "$PPS" ]; then
+    #         if [ "$vm_src" = "$VM_SRC" ] && [ "$vm_dest" = "$VM_DEST" ] && [ "$pod_src" = "$POD_SRC" ] && [ "$pod_dest" = "$POD_DEST" ] && [ "$id_exp" = "$ID_EXP" ]; then
+    #             OUTGOING=$outgoing
+    #             # echo "outgoing= $OUTGOING"
+    #             TX_TIME=$tx_time
+    #             # echo "txtime = $TX_TIME"
+    #         fi
+    #     fi
+    # done < trafgen-tests.csv
 
-    # OUTGOING=$(awk -F',' '$3 ~ /'$VM_SRC'/ && $4 ~ /'$VM_DEST'/ && $5 ~ /'$POD_SRC'/ && $6 ~ /'$POD_DEST'/  { print $1 }' trafgen-tests.csv)
-    # TX_TIME=$(awk -F',' '$3 ~ /'$VM_SRC'/ && $4 ~ /'$VM_DEST'/ && $5 ~ /'$POD_SRC'/ && $6 ~ /'$POD_DEST'/  { print $2 }' trafgen-tests.csv)
+    OUTGOING=$(awk -F',' '$9=='$BYTE' && $7=='$PPS' && $3 ~ /'$VM_SRC'/ && $4 ~ /'$VM_DEST'/ && $5 ~ /'$POD_SRC'/ && $6 ~ /'$POD_DEST'/  { print $1 }' trafgen-tests.csv)
+    TX_TIME=$(awk -F',' '$9=='$BYTE' && $7=='$PPS' && $3 ~ /'$VM_SRC'/ && $4 ~ /'$VM_DEST'/ && $5 ~ /'$POD_SRC'/ && $6 ~ /'$POD_DEST'/  { print $2 }' trafgen-tests.csv)
 
     #echo $CONFIG
     append_csv_from_netsniff $CNI $TEST_TYPE $ID_EXP $PPS $VM_SRC $VM_DEST $POD_SRC $POD_DEST $IP_SRC $IP_DEST $INCOMING $PASSED $RX_TIME $TIMESTAMP $BYTE $CONFIG $CONFIG_CODE $OUTGOING $TX_TIME

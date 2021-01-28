@@ -183,12 +183,16 @@ function create_udp_packet_ipv4() {
         exit 1
     }
 
+
+    PAYLOAD=$((BYTE - 42))
+    UDP_LEN=$((PAYLOAD + 8))
+    IP_LEN=$((UDP_LEN + 20))
     echo -n "{
     ${NEW_MAC_ADDR_POD_DST}
     ${NEW_MAC_ADDR_POD_SRC}
     0x08, 0x00,
     0b01000101, 0,
-    const16(46),
+    const16($IP_LEN),
     const16(2),
     0b01000000, 0,
     64,
@@ -198,8 +202,8 @@ function create_udp_packet_ipv4() {
     ${NEW_IP_ADDR_POD_2},
     const16(9),
     const16(6666),
-    const16(26),
+    const16($UDP_LEN),
     const16(0),
-    fill('B', $((BYTE - 42))),
+    fill('B', $PAYLOAD),
     }" >${FILENAME}-${BYTE_FILENAME}byte.cfg
 }
