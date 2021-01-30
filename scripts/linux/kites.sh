@@ -464,9 +464,8 @@ function exec_net_test() {
         for byte in "${bytes[@]}"; do
             log_debug "$byte $PPS_MIN $PPS_MAX $PPS_INC $pps"
             for ((pps = $PPS_MIN; pps <= $PPS_MAX; pps += $PPS_INC)); do
-                log_debug "$byte bytes."
                 log_debug "____________________________________________________"
-                log_debug "TRAFFIC LOAD: ${pps}pps "
+                log_debug "$byte bytes. TRAFFIC LOAD: ${pps}pps "
                 log_debug "____________________________________________________"
                 exec_udp_test $pps $byte $ID_EXP $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
                 ${KITES_HOME}/scripts/linux/merge-udp-test.sh $pps $byte $N $RUN_TEST_SAMENODE
@@ -606,17 +605,16 @@ function compute_udp_result() {
     INPUT=$1
     CNI=$2
     byte=$3
-    IFS=','
 
-    [ ! -f $INPUT ] && {
+    [ ! -f "$INPUT" ] && {
         echo "$INPUT file not found"
         exit 99
     }
-    echo "BYTE, PPS, C, CONFIG, RX/TX, TXED/TOTX, PacketRate" >udp_results_${CNI}_${byte}bytes.csv
+    echo "BYTE, PPS, C, CONFIG, RX/TX, TXED/TOTX, PacketRate" >"udp_results_${CNI}_${byte}bytes.csv"
 
     awk -F"," '$4=='$byte'' $INPUT >bytetemp.csv
     for ((pps = $PPS_MIN; pps <= $PPS_MAX; pps += $PPS_INC)); do
-        echo "byte, pps, c, config, rx/tx, txed/totx, PacketRate" >>udp_results_${CNI}_${byte}bytes.csv
+        echo "byte, pps, c, config, rx/tx, txed/totx, PacketRate" >>"udp_results_${CNI}_${byte}bytes.csv"
         awk -F"," '$5=='$pps'' bytetemp.csv >temp.csv
         # configs_names=("SamePod" "PodsOnSameNode" "PodsOnDiffNode")
         # configs=("0" "1" "2")
@@ -649,9 +647,10 @@ function compute_cpu_analysis_udp() {
     shift 4
     bytes=("$@")
 
-    cd /vagrant/ext/kites/cpu
-    # sed -i -e "s/\r//g" *
-    IFS=','
+    cd "$KITES_HOME/cpu" || {
+        log_error "Failure"
+        exit 1
+    }
 
     for ((minion_n = 1; minion_n <= $N; minion_n++)); do
         INPUT=cpu-from-minion-${minion_n}
@@ -724,9 +723,8 @@ function compute_cpu_analysis_udp() {
         done
         paste -d, ${cpu_file[*]} | cut -d, -f 1,2,3,4,"${columns_comma%,}" >>cpu-usage-${CNI}-${CPU_TEST}-${byte}bytes.csv
         rm ${cpu_file[*]}
-        mv cpu-usage-${CNI}-${CPU_TEST}-${byte}bytes.csv ${KITES_HOME}/tests/${CNI}/${ID_EXP}/
+        mv "cpu-usage-${CNI}-${CPU_TEST}-${byte}bytes.csv" "${KITES_HOME}/tests/${CNI}/${ID_EXP}/"
     done
-    cd -
 }
 
 function compute_cpu_analysis_tcp() {
@@ -735,9 +733,10 @@ function compute_cpu_analysis_tcp() {
     CNI=$2
     N=$3
 
-    cd /vagrant/ext/kites/cpu
-    # sed -i -e "s/\r//g" *
-    IFS=','
+    cd "$KITES_HOME/cpu" || {
+        log_error "Failure"
+        exit 1
+    }
 
     files[0]=cpu-k8s-master-1-$CPU_TEST-nobytes
     columns[0]=5
@@ -810,7 +809,6 @@ function compute_cpu_analysis_tcp() {
     paste -d, ${cpu_file[*]} | cut -d, -f 1,2,3,4,"${columns_comma%,}" >>cpu-usage-${CNI}-${CPU_TEST}.csv
     rm ${cpu_file[*]}
     mv cpu-usage-${CNI}-${CPU_TEST}.csv ${KITES_HOME}/tests/${CNI}/${ID_EXP}
-    cd -
 }
 
 function print_all_setup_parameters() {
@@ -982,7 +980,10 @@ if $repeatable; then
         RUN_TEST_TCP="false"
         exec_net_test "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU $ID_EXP "${PKT_BYTES[@]}"
         parse_test "$CNI" "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU $ID_EXP "${PKT_BYTES[@]}"
-        cd ${KITES_HOME}/pod-shared
+        cd "${KITES_HOME}/pod-shared" || {
+            log_error "Failure"
+            exit 1
+        }
         shopt -s globstar
         rm -f -- **/*.txt
     done
@@ -1004,7 +1005,10 @@ exec_hour=$(expr $exec_min / 60)
 log_inf "KITES stop. Execution time was $exec_min minutes, $exec_hour hours."
 log_debug "Carla is a killer of VMs."
 log_debug "Saving experiment infos in exp_info.txt"
-cd $KITES_HOME/tests/$CNI
+cd "$KITES_HOME/tests/$CNI" || {
+    log_error "Failure"
+    exit 1
+}
 echo " "Setup parameters:"
      " KITES_HOME=${KITES_HOME}"
      " KITES_NAMSPACE_NAME=${KITES_NAMSPACE_NAME}"

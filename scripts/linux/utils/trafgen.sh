@@ -187,6 +187,7 @@ function create_udp_packet_ipv4() {
     PAYLOAD=$((BYTE - 42))
     UDP_LEN=$((PAYLOAD + 8))
     IP_LEN=$((UDP_LEN + 20))
+    
     echo -n "{
     ${NEW_MAC_ADDR_POD_DST}
     ${NEW_MAC_ADDR_POD_SRC}
