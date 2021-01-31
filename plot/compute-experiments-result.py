@@ -23,6 +23,7 @@ cni_tests_path = os.path.join(kites_home, "tests", cni)
 
 EXP_N = 0
 total = None
+info_columns = None
 with os.scandir(cni_tests_path) as listOfEntries:
     for entry in listOfEntries:
         if entry.is_dir():
@@ -72,7 +73,6 @@ for group_name, pps_df in pps_grouped:
                 col_tx = "cpu-from-minion-"+str(minion_i)
                 col_rx = "cpu-from-minion-"+str(minion_j)
                 rxtx = pps_df.loc[row_conf, "rx/tx"].item() * 100
-                
                 txedtx = pps_df.loc[row_conf, "txed/totx"].item() * 100
 
                 cpu_tx = pps_df.loc[row_conf, col_tx]
@@ -107,7 +107,8 @@ errorbar_txedtx = plt.errorbar(diffnode['PPS'], 'txed/totx',  data=diffnode)
 errorbar_cpu_rx = plt.errorbar(
     diffnode['PPS'], 'cpu_rx', yerr='cpu_rx_std', data=diffnode)
 errorbar_rxtx = plt.errorbar(diffnode['PPS'], 'rx/tx',  data=diffnode)
-plt.legend((errorbar_cpu_tx, errorbar_cpu_rx, errorbar_txedtx, errorbar_rxtx), ('cpu_tx', 'cpu_rx', 'txed/totx', 'rx/tx'))
+plt.legend((errorbar_cpu_tx, errorbar_cpu_rx, errorbar_txedtx,
+            errorbar_rxtx), ('cpu_tx', 'cpu_rx', 'txed/totx', 'rx/tx'))
 # plt.legend()
 plt.show()
-plt.savefig(cni_tests_path+'/'+cni+'_'+str(byte)+'bytes.png')
+plt.savefig(os.path.join(cni_tests_path, cni+'_'+str(byte)+'bytes.png'))

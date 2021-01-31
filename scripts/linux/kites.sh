@@ -15,6 +15,7 @@ function display_usage() {
     echo "  --cni               : set the name of the CNI configuration ex: weavenet, calicoIPIP, calicoVXLAN, flannel"
     echo "Optional arguments:"
     echo "  --nodes             : set the number of nodes in the cluster. Default set =2"
+    echo "  --repeat | -r       : set the number of run. Default set =1"
     echo "  --test-type | -t    : set the test-type between: all, tcp, udp. Default set =all"
     echo "  --conf              : set the configuration between: all, samepod, samenode, diffnode. Default set =all"
     echo "  --clean-all         : remove all experiment data and pods already created (need namespace)."
