@@ -8,7 +8,7 @@ metadata:
 spec:
   containers:
   - name: net-test-server
-    image: zvfvrv/net-test:devnoicmp
+    image: zvfvrv/net-test:devpython
     volumeMounts:
     - name: scripts
       mountPath: /vagrant/ext/kites/scripts/linux/
