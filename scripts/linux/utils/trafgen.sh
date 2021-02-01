@@ -201,7 +201,7 @@ function create_udp_packet() {
         MAC_DST="0xee, 0xee, 0xee, 0xee, 0xee, 0xee,"
     else
         MAC_DST=$(sed -e "s/\"//g" <<<$MAC_ADDR_POD_DST)
-        MAC_DST=$(sed -e "s/^ *//g" <<<$NEW_MAC_ADDR_POD_DST)
+        MAC_DST=$(sed -e "s/^ *//g" <<<$MAC_DST)
     fi
 
     if [ ! -d "${BASE_FOLDER}/${FOLDER}" ]; then
@@ -284,8 +284,6 @@ function create_udp_packet_IPv6() {
     log_debug "$IP_ADDR_SRC"
     log_debug "$IP_ADDR_DST"
 
-
-
     echo -n "{
     ${MAC_ADDR_DST}
     ${MAC_ADDR_SRC}
@@ -299,8 +297,7 @@ function create_udp_packet_IPv6() {
     const16(9),
     const16(6666),
     const16($UDP_LEN),
-    csumip(14, 33),
+    csumip(14, 53),
     fill('B', $PAYLOAD),
     }" >${FILE_NAME}.cfg
 }
-
