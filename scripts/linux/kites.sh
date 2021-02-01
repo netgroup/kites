@@ -167,11 +167,12 @@ function get_pods_info() {
         ip_parsed_pods=$(sed -e "s/\./, /g" <<<${!ip_name})
         declare -xg "IP_$pod_index= $ip_parsed_pods"
 
-        log_debug "Obtaining pod IPv6. pod number $pod_index."
-        declare -xg "POD_IP6_$pod_index=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test" -o json | jq -r ".items[$pod_index-1].status.podIPs[1].ip")"
-        declare ip6_name=POD_IP6_$pod_index
-        echo "POD_IP6_$pod_index=${!ip6_name}" >>${KITES_HOME}/pod-shared/pods_nodes.env
-
+        if [ "$RUN_IPV6_ONLY" == "true" ]; then
+            log_debug "Obtaining pod IPv6. pod number $pod_index."
+            declare -xg "POD_IP6_$pod_index=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test" -o json | jq -r ".items[$pod_index-1].status.podIPs[1].ip")"
+            declare ip6_name=POD_IP6_$pod_index
+            echo "POD_IP6_$pod_index=${!ip6_name}" >>${KITES_HOME}/pod-shared/pods_nodes.env
+        fi
         log_debug "Obtaining pod nodeName. pod number $pod_index."
         declare -xg "POD_HOSTNAME_$pod_index=$(kubectl get pods -n ${KITES_NAMSPACE_NAME} --selector=app="net-test" -o json | jq -r ".items[$pod_index-1].spec.nodeName")"
         declare pod_hostname=POD_HOSTNAME_$pod_index
@@ -244,7 +245,12 @@ function initialize_net_test() {
     get_pods_info
     if $RUN_TEST_UDP; then
         # TODO refactoring this script
-        create_udp_traffic_ipv4 "$CNI" "$N" "$RUN_TEST_SAME" "$RUN_TEST_SAMENODE" "$RUN_TEST_DIFF" "${PKT_BYTES[@]}"
+        if [ "$RUN_IPV4_ONLY" == "true" ]; then
+            declare version="4"
+        elif [ "$RUN_IPV6_ONLY" == "true" ]; then
+            declare version="6"
+        fi
+        create_udp_traffic "$CNI" "$N" "$RUN_TEST_SAME" "$RUN_TEST_SAMENODE" "$RUN_TEST_DIFF" "$version" "${PKT_BYTES[@]}"
     fi
 }
 
@@ -327,6 +333,7 @@ function exec_udp_test() {
     RUN_TEST_SAMENODE=$6
     RUN_TEST_DIFF=$7
     RUN_TEST_CPU=$8
+    V=$9
     BASE_FOLDER=${KITES_HOME}/pod-shared
     CPU_TEST="UDP"
     INTER_EXPERIMENT_SLEEP=3
@@ -359,8 +366,13 @@ function exec_udp_test() {
             for ((j = 1; j <= $N; j++)); do
                 declare name1_pod="POD_NAME_$i"
                 declare name2_pod="POD_NAME_$j"
-                declare ip1_pod="POD_IP_$i"
-                declare ip2_pod="POD_IP_$j"
+                if [ "$V" == "4" ]; then
+                    declare ip1_pod="POD_IP_$i"
+                    declare ip2_pod="POD_IP_$j"
+                elif [ "$V" == "6" ]; then
+                    declare ip1_pod="POD_IP6_$i"
+                    declare ip2_pod="POD_IP6_$j"
+                fi
                 declare host1_pod="POD_HOSTNAME_$i"
                 declare host2_pod="POD_HOSTNAME_$j"
                 declare folder2p_name="FOLDER_POD_$j"
@@ -393,14 +405,18 @@ function exec_udp_test() {
     if $RUN_TEST_SAMENODE; then
         log_debug "................SINGLE POD TEST................"
         log_debug "----------------------------------------------"
-
+        if [ "$V" == "4" ]; then
+        declare s_pod_ip="SINGLE_POD_IP"
+    elif [ "$V" == "6" ]; then
+        declare s_pod_ip="SINGLE_POD_IP6"
+    fi
         if $RUN_TEST_SAME; then
             if $RUN_TEST_CPU; then
                 start_cpu_monitor_nodes $N "samepod" 0 "$SINGLE_POD_HOSTNAME" $CPU_TEST $BYTE $PPS
             fi
-            kctl_exec $SINGLE_POD_NAME "${KITES_HOME}/scripts/linux/netsniff-test.sh singlePodToSinglePod-${BYTE}byte.pcap $SINGLE_POD_IP $SINGLE_POD_IP $SINGLE_POD_HOSTNAME $SINGLE_POD_HOSTNAME $SINGLE_POD_NAME $SINGLE_POD_NAME $FOLDER_SINGLE_POD $BYTE $PPS $ID_EXP" &
+            kctl_exec $SINGLE_POD_NAME "${KITES_HOME}/scripts/linux/netsniff-test.sh singlePodToSinglePod-${BYTE}byte.pcap ${!s_pod_ip} ${!s_pod_ip} $SINGLE_POD_HOSTNAME $SINGLE_POD_HOSTNAME $SINGLE_POD_NAME $SINGLE_POD_NAME $FOLDER_SINGLE_POD $BYTE $PPS $ID_EXP" &
             sleep 2 &&
-                kctl_exec $SINGLE_POD_NAME "${KITES_HOME}/scripts/linux/trafgen-test.sh singlePodToSinglePod-${BYTE}byte.cfg $SINGLE_POD_IP $SINGLE_POD_IP $SINGLE_POD_HOSTNAME $SINGLE_POD_HOSTNAME $SINGLE_POD_NAME $SINGLE_POD_NAME $FOLDER_SINGLE_POD $BYTE $PPS $ID_EXP"
+                kctl_exec $SINGLE_POD_NAME "${KITES_HOME}/scripts/linux/trafgen-test.sh singlePodToSinglePod-${BYTE}byte.cfg ${!s_pod_ip} ${!s_pod_ip} $SINGLE_POD_HOSTNAME $SINGLE_POD_HOSTNAME $SINGLE_POD_NAME $SINGLE_POD_NAME $FOLDER_SINGLE_POD $BYTE $PPS $ID_EXP"
             if $RUN_TEST_CPU; then
                 stop_cpu_monitor_nodes $N "samepod" 0 "$SINGLE_POD_HOSTNAME" $CPU_TEST $BYTE $PPS
             fi
@@ -408,7 +424,11 @@ function exec_udp_test() {
         fi
         for ((minions_n = 1; minions_n <= $N; minions_n++)); do
             declare name1_pod="POD_NAME_$minions_n"
-            declare ip1_pod="POD_IP_$minions_n"
+            if [ "$V" == "4" ]; then
+                declare ip1_pod="POD_IP_$minions_n"
+            elif [ "$V" == "6" ]; then
+                declare ip1_pod="POD_IP6_$minions_n"
+            fi
             declare host1_pod="POD_HOSTNAME_$minions_n"
             declare folder1p_name="FOLDER_POD_$minions_n"
             if ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" = "${!host1_pod//[$' ']/}" ] && $RUN_TEST_SAMENODE) || ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" != "${!host1_pod//[$' ']/}" ] && $RUN_TEST_DIFF); then
@@ -419,9 +439,9 @@ function exec_udp_test() {
                         start_cpu_monitor_nodes $N "diffnode" 2 "${SINGLE_POD_HOSTNAME//[$' ']/}TO${!host1_pod//[$' ']/}" $CPU_TEST $BYTE $PPS
                     fi
                 fi
-                kctl_exec ${!name1_pod} "${KITES_HOME}/scripts/linux/netsniff-test.sh singlePodToPod$minions_n-${BYTE}byte.pcap $SINGLE_POD_IP ${!ip1_pod} $SINGLE_POD_HOSTNAME ${!host1_pod} $SINGLE_POD_NAME ${!name1_pod} ${!folder1p_name} $BYTE $PPS $ID_EXP" &
+                kctl_exec ${!name1_pod} "${KITES_HOME}/scripts/linux/netsniff-test.sh singlePodToPod$minions_n-${BYTE}byte.pcap ${!s_pod_ip} ${!ip1_pod} $SINGLE_POD_HOSTNAME ${!host1_pod} $SINGLE_POD_NAME ${!name1_pod} ${!folder1p_name} $BYTE $PPS $ID_EXP" &
                 sleep 2 &&
-                    kctl_exec $SINGLE_POD_NAME "${KITES_HOME}/scripts/linux/trafgen-test.sh singlePodToPod$minions_n-${BYTE}byte.cfg $SINGLE_POD_IP ${!ip1_pod} $SINGLE_POD_HOSTNAME ${!host1_pod} $SINGLE_POD_NAME ${!name1_pod} $FOLDER_SINGLE_POD $BYTE $PPS $ID_EXP"
+                    kctl_exec $SINGLE_POD_NAME "${KITES_HOME}/scripts/linux/trafgen-test.sh singlePodToPod$minions_n-${BYTE}byte.cfg ${!s_pod_ip} ${!ip1_pod} $SINGLE_POD_HOSTNAME ${!host1_pod} $SINGLE_POD_NAME ${!name1_pod} $FOLDER_SINGLE_POD $BYTE $PPS $ID_EXP"
                 if $RUN_TEST_CPU; then
                     if [ "${SINGLE_POD_HOSTNAME//[$' ']/}" = "${!host1_pod//[$' ']/}" ]; then
                         stop_cpu_monitor_nodes $N "samenode" 1 "${!host1_pod//[$' ']/}" $CPU_TEST $BYTE $PPS
@@ -458,6 +478,12 @@ function exec_net_test() {
     shift 8
     bytes=("$@")
 
+    if [ "$RUN_IPV4_ONLY" == "true" ]; then
+        declare version="4"
+    elif [ "$RUN_IPV6_ONLY" == "true" ]; then
+        declare version="6"
+    fi
+
     log_debug "${bytes[*]}"
     if $UDP_TEST; then
         log_debug "UDP TEST"
@@ -468,7 +494,7 @@ function exec_net_test() {
                 log_debug "____________________________________________________"
                 log_debug "$byte bytes. TRAFFIC LOAD: ${pps}pps "
                 log_debug "____________________________________________________"
-                exec_udp_test $pps $byte $ID_EXP $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU
+                exec_udp_test $pps $byte $ID_EXP $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU $version
                 ${KITES_HOME}/scripts/linux/merge-udp-test.sh $pps $byte $N $RUN_TEST_SAMENODE
             done
         done
@@ -487,11 +513,7 @@ function exec_net_test() {
         echo -e "TCP TEST NODES\n" >TCP_IPERF_NODE_OUTPUT.txt
         for ((minion_n = 1; minion_n <= "$N"; minion_n++)); do
             declare node_ip="NODE_IP_$minion_n"
-            if [ "$RUN_IPV4_ONLY" == "true" ]; then
-                declare version="4"
-            elif [ "$RUN_IPV6_ONLY" == "true" ]; then
-                declare version="6"
-            fi
+
             sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@k8s-minion-"${minion_n}".k8s-play.local "${KITES_HOME}/scripts/linux/tcp-test-node.sh $ID_EXP $N ${!node_ip} $version"
         done
     fi
