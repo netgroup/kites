@@ -71,7 +71,10 @@ function start_cpu_monitor_node() {
 
 	echo $$ >"${KITES_HOME}/cpu/cpu-$HOSTNAME-$CPU_TEST-${BYTE}-$CONFIG.pid"
 
-	cd "${KITES_HOME}/cpu/" || { log_error "Failure"; exit 1; }
+	cd "${KITES_HOME}/cpu/" || {
+		log_error "Failure"
+		exit 1
+	}
 	echo "PPS, CONFIG, CONFIG_CODE, TEST_TYPE, DATE, CPU-${HOSTNAME}, %" >>"cpu-$HOSTNAME-$CPU_TEST-${BYTE}bytes.csv"
 
 	sleep 2
