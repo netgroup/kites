@@ -182,8 +182,8 @@ function create_udp_traffic_single_pod() {
 }
 
 function create_udp_packet() {
-    MAC_ADDR_POD_SRC=$1
-    MAC_ADDR_POD_DST=$2
+    MAC_ADDR_POD_SRC=$(convert_mac_addr $1)
+    MAC_ADDR_POD_DST=$(convert_mac_addr $2)
     IP_ADDR_SRC=$3
     IP_ADDR_DST=$4
     BYTE=$5
@@ -198,7 +198,7 @@ function create_udp_packet() {
 
     MAC_SRC=$(sed -e "s/\"//g" <<<$MAC_ADDR_POD_SRC)
     if [ "$CNI" == "calicoIPIP" ] || [ "$CNI" == "calicoVXLAN" ]; then
-        MAC_DST="0xee, 0xee, 0xee, 0xee, 0xee, 0xee,"
+        MAC_DST="0xee, 0xee, 0xee, 0xee, 0xee, 0xee"
     else
         MAC_DST=$(sed -e "s/\"//g" <<<$MAC_ADDR_POD_DST)
         MAC_DST=$(sed -e "s/^ *//g" <<<$MAC_DST)
@@ -223,27 +223,42 @@ function create_udp_packet() {
 
 }
 
+function convert_mac_addr() {
+    MAC_ADDR_CONV=$(sed -e "s/^/0x/g" <<<$1)
+    sed -e "s/\:/, 0x/g" <<<$MAC_ADDR_CONV
+}
+
+function convert_ipv4_addr() {
+    IP_ADDR_CONV=$(sed -e "s/\./, /g" <<<$1)
+    sed -e "s/[\"\r]//g" <<<${IP_ADDR_CONV}
+}
+
+function convert_ipv6_addr() {
+    IP_ADDR_CONV=$(sipcalc $1 | fgrep Expanded | cut -d '-' -f 2 | sed -e "s/^\s//g" | sed -e "s/\://g" | sed -e "s/../, 0x&/g")
+    sed -e "s/^\,\s//g" <<<${IP_ADDR_CONV}
+}
+
 function create_udp_packet_IPv4() {
     log_debug "create UDP packet IPv4"
 
     MAC_ADDR_SRC=$1
     MAC_ADDR_DST=$2
-    IP_ADDR_SRC=$3
-    IP_ADDR_DST=$4
+    IP_ADDR_SRC=$(convert_ipv4_addr $3)
+    IP_ADDR_DST=$(convert_ipv4_addr $4)
     BYTE=$5
     FILE_NAME=$6
-    IP_ADDR_SRC=$(sed -e "s/\./, /g" <<<${IP_ADDR_SRC})
-    IP_ADDR_DST=$(sed -e "s/\./, /g" <<<${IP_ADDR_DST})
-    IP_ADDR_SRC=$(sed -e "s/[\"\r]//g" <<<$IP_ADDR_SRC)
-    IP_ADDR_DST=$(sed -e "s/[\"\r]//g" <<<$IP_ADDR_DST)
+    # IP_ADDR_SRC=$(sed -e "s/\./, /g" <<<${IP_ADDR_SRC})
+    # IP_ADDR_DST=$(sed -e "s/\./, /g" <<<${IP_ADDR_DST})
+    # IP_ADDR_SRC=$(sed -e "s/[\"\r]//g" <<<$IP_ADDR_SRC)
+    # IP_ADDR_DST=$(sed -e "s/[\"\r]//g" <<<$IP_ADDR_DST)
 
     PAYLOAD=$((BYTE - 42))
     UDP_LEN=$((PAYLOAD + 8))
     IP_LEN=$((UDP_LEN + 20))
 
     echo -n "{
-    ${MAC_ADDR_DST}
-    ${MAC_ADDR_SRC}
+    ${MAC_ADDR_DST},
+    ${MAC_ADDR_SRC},
     0x08, 0x00,
     0b01000101, 0,
     const16($IP_LEN),
@@ -266,8 +281,8 @@ function create_udp_packet_IPv6() {
     log_debug "create UDP packet IPv4"
     MAC_ADDR_SRC=$1
     MAC_ADDR_DST=$2
-    IP_ADDR_SRC=$3
-    IP_ADDR_DST=$4
+    IP_ADDR_SRC=$(convert_ipv6_addr $3)
+    IP_ADDR_DST=$(convert_ipv6_addr $4)
     BYTE=$5
     FILE_NAME=$6
 
@@ -275,12 +290,12 @@ function create_udp_packet_IPv6() {
     UDP_LEN=$((PAYLOAD + 8))
 
     # get Expanded IPv6 Address
-    IP_ADDR_SRC=$(sipcalc $IP_ADDR_SRC | fgrep Expanded | cut -d '-' -f 2 | sed -e "s/^\s//g" | sed -e "s/\://g" | sed -e "s/../, 0x&/g")
-    IP_ADDR_SRC=$(sed -e "s/^\,\s//g" <<<${IP_ADDR_SRC})
-    #IP_ADDR_SRC=$(sed -e "s/../ ,0x&/g" <<<${IP_ADDR_SRC})
-    IP_ADDR_DST=$(sipcalc $IP_ADDR_DST | fgrep Expanded | cut -d '-' -f 2 | sed -e "s/^\s//g" | sed -e "s/\://g" | sed -e "s/../, 0x&/g")
-    IP_ADDR_DST=$(sed -e "s/^\,\s//g" <<<${IP_ADDR_DST})
-    #IP_ADDR_DST=$(sed -e "s/../ ,0x&/g" <<<${IP_ADDR_DST})
+    # IP_ADDR_SRC=$(sipcalc $IP_ADDR_SRC | fgrep Expanded | cut -d '-' -f 2 | sed -e "s/^\s//g" | sed -e "s/\://g" | sed -e "s/../, 0x&/g")
+    # IP_ADDR_SRC=$(sed -e "s/^\,\s//g" <<<${IP_ADDR_SRC})
+    # #IP_ADDR_SRC=$(sed -e "s/../ ,0x&/g" <<<${IP_ADDR_SRC})
+    # IP_ADDR_DST=$(sipcalc $IP_ADDR_DST | fgrep Expanded | cut -d '-' -f 2 | sed -e "s/^\s//g" | sed -e "s/\://g" | sed -e "s/../, 0x&/g")
+    # IP_ADDR_DST=$(sed -e "s/^\,\s//g" <<<${IP_ADDR_DST})
+    # #IP_ADDR_DST=$(sed -e "s/../ ,0x&/g" <<<${IP_ADDR_DST})
     log_debug "$IP_ADDR_SRC"
     log_debug "$IP_ADDR_DST"
 
