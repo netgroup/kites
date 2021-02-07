@@ -257,6 +257,11 @@ function initialize_net_test() {
 function exec_tcp_test_between_pods() {
     log_inf "Start execution TCP net test between pods."
     ID_EXP=$1
+    N=$2
+    RUN_TEST_SAME=$3
+    RUN_TEST_SAMENODE=$4
+    RUN_TEST_DIFF=$5
+    RUN_TEST_CPU=$6
     CPU_TEST="TCP"
     cd "${KITES_HOME}/pod-shared" || {
         log_error "Failure"
@@ -297,7 +302,13 @@ function exec_tcp_test_between_pods() {
                 fi
             fi
         done
-        if ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" = "${!host1_pod//[$' ']/}" ] && $RUN_TEST_SAMENODE) || ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" != "${!host1_pod//[$' ']/}" ] && $RUN_TEST_DIFF); then
+        if $RUN_TEST_SAMENODE; then
+            if [ "$RUN_IPV4_ONLY" == "true" ]; then
+                declare single_pod_ip="SINGLE_POD_IP"
+            elif [ "$RUN_IPV6_ONLY" == "true" ]; then
+                declare single_pod_ip="SINGLE_POD_IP6"
+            fi
+
             if $RUN_TEST_CPU; then
                 if ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" = "${!host1_pod//[$' ']/}" ] && $RUN_TEST_SAMENODE); then
                     start_cpu_monitor_nodes "$N" "samenode" 1 "${!host1_pod//[$' ']/}" $CPU_TEST "no" "POD"
@@ -305,14 +316,7 @@ function exec_tcp_test_between_pods() {
                     start_cpu_monitor_nodes "$N" "diffnode" 2 "${!host1_pod//[$' ']/}TO${SINGLE_POD_HOSTNAME//[$' ']/}" $CPU_TEST "no" "POD"
                 fi
             fi
-
-            if [ "$RUN_IPV4_ONLY" == "true" ]; then
-                declare single_pod_ip="SINGLE_POD_IP"
-            elif [ "$RUN_IPV6_ONLY" == "true" ]; then
-                declare single_pod_ip="SINGLE_POD_IP6"
-            fi
             kctl_exec ${!name1_pod} "${KITES_HOME}/scripts/linux/iperf-test.sh ${!ip1_pod} ${!single_pod_ip} ${!host1_pod} $SINGLE_POD_HOSTNAME ${!name1_pod} $SINGLE_POD_NAME $ID_EXP"
-
             if $RUN_TEST_CPU; then
                 if ([ "${SINGLE_POD_HOSTNAME//[$' ']/}" = "${!host1_pod//[$' ']/}" ] && $RUN_TEST_SAMENODE); then
                     stop_cpu_monitor_nodes "$N" "samenode" 1 "${!host1_pod//[$' ']/}" $CPU_TEST "no" "POD"
@@ -507,14 +511,15 @@ function exec_net_test() {
             log_error "Failure"
             exit 1
         }
+        log_debug "TCP TEST between pods"
         echo -e "TCP TEST\n" >TCP_IPERF_OUTPUT.txt
         exec_tcp_test_between_pods "$ID_EXP" "$N" "$RUN_TEST_SAME" "$RUN_TEST_SAMENODE" "$RUN_TEST_DIFF" "$RUN_TEST_CPU"
 
+        log_debug "TCP TEST between nodes"
         echo -e "TCP TEST NODES\n" >TCP_IPERF_NODE_OUTPUT.txt
         for ((minion_n = 1; minion_n <= "$N"; minion_n++)); do
             declare node_ip="NODE_IP_$minion_n"
-
-            sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@k8s-minion-"${minion_n}".k8s-play.local "${KITES_HOME}/scripts/linux/tcp-test-node.sh $ID_EXP $N ${!node_ip} $version"
+            sshpass -p "vagrant" ssh -o StrictHostKeyChecking=no vagrant@k8s-minion-"${minion_n}".k8s-play.local "${KITES_HOME}/scripts/linux/tcp-test-node.sh $ID_EXP $N ${!node_ip} $version "$RUN_TEST_SAME" "$RUN_TEST_SAMENODE" "$RUN_TEST_DIFF" "$RUN_TEST_CPU""
         done
     fi
 }
