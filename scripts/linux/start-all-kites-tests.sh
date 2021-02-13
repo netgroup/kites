@@ -35,7 +35,7 @@ vagrant ssh k8s-master-1.k8s-play.local -- -t 'cd /vagrant/ext/kites/scripts/lin
 # vagrant ssh k8s-master-1.k8s-play.local -- -t 'cd /vagrant/ext/kites/scripts/linux/ && ./kites.sh --cni calicoIPIP -t udp --nodes 2'
 
 
-#WEAVE NET
+# WEAVE NET
 cleanup_mount
 log_debug "SETTING WEAVE NET IN ENV.YAML"
 sed -i 's/no-cni-plugin: true/no-cni-plugin: false/g' env.yaml
@@ -48,7 +48,7 @@ vagrant provision --provision-with quick-setup
 log_debug "wait 60 seconds"
 sleep 60
 log_debug "START TEST WITH WEAVE NET"
-vagrant ssh k8s-master-1.k8s-play.local -- -t 'cd /vagrant/ext/kites/scripts/linux/ && ./kites.sh --cni weavenet --nodes 3 --conf diffnode-r 5'
+vagrant ssh k8s-master-1.k8s-play.local -- -t 'cd /vagrant/ext/kites/scripts/linux/ && ./kites.sh --cni weavenet --nodes 3 --conf diffnode -r 5'
 
 # # CALICO IPIP IPv6
 # cleanup_mount
@@ -101,7 +101,7 @@ vagrant provision --provision-with quick-setup
 log_debug "wait 60 seconds"
 sleep 60
 log_debug "START TEST WITH  CALICO IPIP"
-vagrant ssh k8s-master-1.k8s-play.local -- -t 'cd /vagrant/ext/kites/scripts/linux/ && ./kites.sh --cni calicoIPIP --nodes 3 --conf diffnode-r 5'
+vagrant ssh k8s-master-1.k8s-play.local -- -t 'cd /vagrant/ext/kites/scripts/linux/ && ./kites.sh --cni calicoIPIP --nodes 3 --conf diffnode -r 5'
 
 # CALICO VXLAN
 cleanup_mount
@@ -118,7 +118,7 @@ vagrant provision --provision-with quick-setup
 log_debug "wait 60 seconds"
 sleep 60
 log_debug "START TEST WITH  CALICO VXLAN"
-vagrant ssh k8s-master-1.k8s-play.local -- -t 'cd /vagrant/ext/kites/scripts/linux/ && ./kites.sh --cni calicoVXLAN --nodes 3 --conf diffnode-r 5'
+vagrant ssh k8s-master-1.k8s-play.local -- -t 'cd /vagrant/ext/kites/scripts/linux/ && ./kites.sh --cni calicoVXLAN --nodes 3 --conf diffnode -r 5'
 
 # FLANNEL
 cleanup_mount
@@ -132,6 +132,6 @@ vagrant provision --provision-with quick-setup
 log_debug "wait 60 seconds"
 sleep 60
 log_debug "START TEST WITH FLANNEL"
-vagrant ssh k8s-master-1.k8s-play.local -- -t 'cd /vagrant/ext/kites/scripts/linux/ && ./kites.sh --cni flannel --nodes 3 --conf diffnode-r 5'
+vagrant ssh k8s-master-1.k8s-play.local -- -t 'cd /vagrant/ext/kites/scripts/linux/ && ./kites.sh --cni flannel --nodes 3 --conf diffnode -r 5'
 
 log_inf "End Tests"
