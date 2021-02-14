@@ -39,9 +39,9 @@ function create_udp_traffic() {
                     declare mac2_pod="MAC_ADDR_POD_$j"
                     declare mac1_minion="MAC_ADDR_MINION_$i"
                     declare mac2_minion="MAC_ADDR_MINION_$j"
-                    if [ "$i" -eq "$j" ]; then
+                    if [ "$i" -eq "$j"  && $RUN_TEST_SAME ]; then
                         create_udp_packet "${!mac1_pod}" "${!mac1_pod}" "${!ip1_name}" "${!ip2_name}" $byte samePod$i pod$i $CNI $V
-                    else
+                    elif [ "${!name_vm1}" != "${!name_vm2}" ] && $RUN_TEST_DIFF; then
                         create_udp_packet "${!mac1_pod}" "${!mac1_minion}" "${!ip1_name}" "${!ip2_name}" $byte pod${i}ToPod${j} pod$i $CNI $V
                         create_udp_packet "${!mac2_pod}" "${!mac2_minion}" "${!ip2_name}" "${!ip1_name}" $byte pod${j}ToPod${i} pod$i $CNI $V
                     fi
@@ -100,10 +100,10 @@ function create_udp_traffic_single_pod_flannel() {
     log_debug "Creating UDP Packets for single POD"
     for ((minion_n = 1; minion_n <= $N; minion_n++)); do
         declare n_plus=$((minion_n + 1))
-        host_pod=$(awk 'NR=='$n_plus' { print $3}' podNameAndIP.txt)
+        host_pod=$(awk 'NR=='$n_plus' { print $3}' /${KITES_HOME}/pod-shared/podNameAndIP.txt)
         declare -x "MINION_$minion_n= $host_pod"
     done
-    MINION_SINGLE_POD=$(awk 'NR=='$((N + 2))' { print $3}' podNameAndIP.txt)
+    MINION_SINGLE_POD=$(awk 'NR=='$((N + 2))' { print $3}' /${KITES_HOME}/pod-shared/podNameAndIP.txt)
 
     if [ "$V" == "4" ]; then
         declare s_pod_ip="SINGLE_POD_IP"
@@ -122,9 +122,9 @@ function create_udp_traffic_single_pod_flannel() {
                     declare mac_addr_pod="MAC_ADDR_POD_$minion_n"
                     declare mac_addr_minion="MAC_ADDR_MINION_$minion_n"
                     if [ "$V" == "4" ]; then
-                        declare ip_pod="POD_IP_$i"
+                        declare ip_pod="POD_IP_$minion_n"
                     elif [ "$V" == "6" ]; then
-                        declare ip_pod="POD_IP6_$i"
+                        declare ip_pod="POD_IP6_$minion_n"
                     fi
                     if [ $minion_n -eq $j ]; then
                         create_udp_packet "$MAC_ADDR_SINGLE_POD" "${!mac_addr_pod}" "${!s_pod_ip}" "${!ip_pod}" $byte singlePodToPod$j single-pod $CNI $V
