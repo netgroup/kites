@@ -21,6 +21,10 @@ spec:
       hostPID: true
       hostIPC: true
       hostNetwork: true
+      tolerations:
+      # this toleration is to have the daemonset runnable on master nodes
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
       containers:
         - ports:
             - containerPort: 9100

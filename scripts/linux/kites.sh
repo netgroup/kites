@@ -49,11 +49,12 @@ CLEAN_ALL="false"
 RUN_IPV4_ONLY="true"
 RUN_IPV6_ONLY="false"
 PKT_BYTES=(100)
-PPS_MIN=14500
-PPS_MAX=15000
-PPS_INC=500
+PPS_MIN=30000
+PPS_MAX=120000
+PPS_INC=5000
 export PPS_MIN PPS_MAX PPS_INC
 repeatable="false"
+monitoing="false"
 EXP_N=0
 VERBOSITY_LEVEL=5 # default debug level. see in utils/logging.sh
 
@@ -66,6 +67,25 @@ VERBOSITY_LEVEL=5 # default debug level. see in utils/logging.sh
 ##
 #   Define utility functions
 ##
+
+
+
+function prometheus_monitoring() {
+	log_inf "Start Prometheus monitoring configuration"
+
+	log_inf "Creation of \"monitoring\" namespace"
+    kubectl create namespace monitoring
+    kubectl apply -f ${KITES_HOME}/prometheus/configmap.yaml
+    kubectl apply -f ${KITES_HOME}/prometheus/deployment.yaml
+    kubectl apply -f ${KITES_HOME}/prometheus/role-config.yaml
+    log_inf "Creation of \"monitoring\" node-exporter-daemonset"
+    kubectl apply -f ${KITES_HOME}/prometheus/node-exporter-ds.yaml
+    log_inf "Creation of Grafana configuration"
+    kubectl apply -f ${KITES_HOME}/prometheus/grafana-config.yaml
+    kubectl apply -f ${KITES_HOME}/prometheus/grafana-depl.yaml
+    log_inf "Wait until all pods are running."
+    kubectl wait -n monitoring --for=condition=Ready pods --all --timeout=600s
+}
 
 function create_name_space() {
     log_inf "Create a namespace if not exist."
@@ -783,7 +803,7 @@ function compute_cpu_analysis_tcp() {
     printf -v minions_comma '%s,' "${minions[@]}"
     echo ${files[*]}
 
-    echo "TCP-CONFIG, C, CONFIG, TEST_TYPE, cpu-from-master, ${minions_comma%,}" >"cpu-usage-${CNI}-${CPU_TEST}.csv"
+    echo "TCP-CONFIG, C, CONFIG, TEST_TYPE, cpu-from-master, ${minions_comma%,}, throughput" >"cpu-usage-${CNI}-${CPU_TEST}.csv"
 
     for i in "${!files[@]}"; do
         echo "tcp-config, c, config, test_type, cpu_avg, throughput (Gbps)" >>"cpu_usage_${files[i]}.csv"
@@ -966,6 +986,11 @@ while [ $# -gt 0 ]; do
         EXP_N=$2
         ;;
 
+    --monitor | -m)
+        # shift
+        monitoing="true"
+        ;;
+
     --help | -h)
         display_usage && exit
         ;;
@@ -987,6 +1012,11 @@ if [ "$CNI" = "" ]; then
     display_usage && exit
 fi
 print_all_setup_parameters
+
+if $monitoing; then
+    prometheus_monitoring
+fi
+
 start=$(date +%s)
 log_inf "KITES start."
 
@@ -1021,10 +1051,17 @@ else
     parse_test "$CNI" "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU $ID_EXP "${PKT_BYTES[@]}"
 fi
 
-for byte in "${PKT_BYTES[@]}"; do
-    log_debug "Creating plot for packets of $byte bytes"
-    python3.7 ${KITES_HOME}/plot/compute-experiments-result.py $CNI $byte $N
-done
+if $RUN_TEST_UDP; then
+    for byte in "${PKT_BYTES[@]}"; do
+        log_debug "Creating plot for packets of $byte bytes"
+        python3.7 ${KITES_HOME}/plot/compute-experiments-result.py $CNI $byte $N
+    done
+fi
+
+if $RUN_TEST_TCP; then
+    log_debug "Creating plot for TCP traffic"
+    python3.7 ${KITES_HOME}/plot/compute-tcp-plot.py $CNI $N
+fi
 
 end=$(date +%s)
 exec_time=$(expr $end - $start)
