@@ -39,7 +39,9 @@ function create_udp_traffic() {
                     declare mac2_pod="MAC_ADDR_POD_$j"
                     declare mac1_minion="MAC_ADDR_MINION_$i"
                     declare mac2_minion="MAC_ADDR_MINION_$j"
-                    if [ "$i" -eq "$j"  && $RUN_TEST_SAME ]; then
+                    declare name_vm1="POD_HOSTNAME_$i"
+                    declare name_vm2="POD_HOSTNAME_$j"
+                    if [ "$i" -eq "$j"] && $RUN_TEST_SAME; then
                         create_udp_packet "${!mac1_pod}" "${!mac1_pod}" "${!ip1_name}" "${!ip2_name}" $byte samePod$i pod$i $CNI $V
                     elif [ "${!name_vm1}" != "${!name_vm2}" ] && $RUN_TEST_DIFF; then
                         create_udp_packet "${!mac1_pod}" "${!mac1_minion}" "${!ip1_name}" "${!ip2_name}" $byte pod${i}ToPod${j} pod$i $CNI $V
