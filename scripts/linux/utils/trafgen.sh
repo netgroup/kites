@@ -10,7 +10,6 @@ function create_udp_traffic() {
     V=$6
     shift 6
     bytes=("$@")
-
     if [ "$CNI" == "flannel" ]; then
         log_debug "Obtaining MAC Addresses of the Nodes for $CNI..."
 
@@ -41,7 +40,7 @@ function create_udp_traffic() {
                     declare mac2_minion="MAC_ADDR_MINION_$j"
                     declare name_vm1="POD_HOSTNAME_$i"
                     declare name_vm2="POD_HOSTNAME_$j"
-                    if [ "$i" -eq "$j"] && $RUN_TEST_SAME; then
+                    if [ "$i" -eq "$j" ] && $RUN_TEST_SAME; then
                         create_udp_packet "${!mac1_pod}" "${!mac1_pod}" "${!ip1_name}" "${!ip2_name}" $byte samePod$i pod$i $CNI $V
                     elif [ "${!name_vm1}" != "${!name_vm2}" ] && $RUN_TEST_DIFF; then
                         create_udp_packet "${!mac1_pod}" "${!mac1_minion}" "${!ip1_name}" "${!ip2_name}" $byte pod${i}ToPod${j} pod$i $CNI $V
@@ -52,7 +51,7 @@ function create_udp_traffic() {
         done
         log_debug "Creating UDP Packets for Single Pod..."
         if $RUN_TEST_SAMENODE; then
-            create_udp_traffic_single_pod_flannel $CNI $N $V "${bytes[@]}"
+            create_udp_traffic_single_pod_flannel $CNI $N $V $RUN_TEST_SAME "${bytes[@]}"
         fi
     else
         log_debug "Creating UDP Packet for DaemonSet... IPv$V"
@@ -96,7 +95,8 @@ function create_udp_traffic_single_pod_flannel() {
     CNI=$1
     N=$2
     V=$3
-    shift 3
+    RUN_TEST_SAME=$4
+    shift 4
     bytes=("$@")
 
     log_debug "Creating UDP Packets for single POD"
@@ -113,22 +113,22 @@ function create_udp_traffic_single_pod_flannel() {
         declare s_pod_ip="SINGLE_POD_IP6"
     fi
 
-    for ((minion_n = 1; minion_n <= $N; minion_n++)); do
-        declare hostname="MINION_$minion_n"
+    for ((i = 1; i <= $N; i++)); do
+        declare hostname="MINION_$i"
         if [ "${!hostname//[$' ']/}" = "$MINION_SINGLE_POD" ]; then
             # bytes=(100 1000)
             for byte in "${bytes[@]}"; do
                 log_debug "Creating UDP packets with size: $byte bytes"
                 create_udp_packet "$MAC_ADDR_SINGLE_POD" "$MAC_ADDR_SINGLE_POD" "${!s_pod_ip}" "${!s_pod_ip}" $byte singlePodToSinglePod single-pod $CNI $V
                 for ((j = 1; j <= $N; j++)); do
-                    declare mac_addr_pod="MAC_ADDR_POD_$minion_n"
-                    declare mac_addr_minion="MAC_ADDR_MINION_$minion_n"
+                    declare mac_addr_pod="MAC_ADDR_POD_$i"
+                    declare mac_addr_minion="MAC_ADDR_MINION_$i"
                     if [ "$V" == "4" ]; then
-                        declare ip_pod="POD_IP_$minion_n"
+                        declare ip_pod="POD_IP_$i"
                     elif [ "$V" == "6" ]; then
-                        declare ip_pod="POD_IP6_$minion_n"
+                        declare ip_pod="POD_IP6_$i"
                     fi
-                    if [ $minion_n -eq $j ]; then
+                    if [ $i -eq $j ] && $RUN_TEST_SAME; then
                         create_udp_packet "$MAC_ADDR_SINGLE_POD" "${!mac_addr_pod}" "${!s_pod_ip}" "${!ip_pod}" $byte singlePodToPod$j single-pod $CNI $V
                         create_udp_packet "$MAC_ADDR_SINGLE_POD" "${!mac_addr_pod}" "${!s_pod_ip}" "${!ip_pod}" $byte singlePodToPod$j pod$j $CNI $V
                     else

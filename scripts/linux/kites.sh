@@ -49,7 +49,7 @@ CLEAN_ALL="false"
 RUN_IPV4_ONLY="true"
 RUN_IPV6_ONLY="false"
 PKT_BYTES=(100)
-PPS_MIN=30000
+PPS_MIN=100000
 PPS_MAX=120000
 PPS_INC=5000
 export PPS_MIN PPS_MAX PPS_INC
@@ -270,6 +270,7 @@ function initialize_net_test() {
         elif [ "$RUN_IPV6_ONLY" == "true" ]; then
             declare version="6"
         fi
+
         create_udp_traffic "$CNI" "$N" "$RUN_TEST_SAME" "$RUN_TEST_SAMENODE" "$RUN_TEST_DIFF" "$version" "${PKT_BYTES[@]}"
     fi
 }
@@ -376,7 +377,6 @@ function exec_udp_test() {
     if $RUN_TEST_SAMENODE; then
         kctl_exec $SINGLE_POD_NAME "cp -r ${KITES_HOME}/pod-shared /"
     fi
-
     if $RUN_TEST_SAME || $RUN_TEST_DIFF; then
         for ((i = 1; i <= $N; i++)); do
             declare folder1p_name="FOLDER_POD_$i"
@@ -501,7 +501,7 @@ function exec_net_test() {
     ID_EXP=$8
     shift 8
     bytes=("$@")
-
+    
     if [ "$RUN_IPV4_ONLY" == "true" ]; then
         declare version="4"
     elif [ "$RUN_IPV6_ONLY" == "true" ]; then
@@ -518,7 +518,7 @@ function exec_net_test() {
                 log_debug "____________________________________________________"
                 log_debug "$byte bytes. TRAFFIC LOAD: ${pps}pps "
                 log_debug "____________________________________________________"
-                exec_udp_test $pps $byte $ID_EXP $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU $version
+                exec_udp_test "$pps" "$byte" "$ID_EXP" "$N" "$RUN_TEST_SAME" "$RUN_TEST_SAMENODE" "$RUN_TEST_DIFF" "$RUN_TEST_CPU" "$version"
                 ${KITES_HOME}/scripts/linux/merge-udp-test.sh $pps $byte $N $RUN_TEST_SAMENODE
             done
         done
@@ -1028,16 +1028,14 @@ if $RUN_TEST_CPU; then
 fi
 
 create_name_space
-
 initialize_net_test "$CNI" "$N" $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF "${PKT_BYTES[@]}"
-
 if $repeatable; then
     for ((exp_n = 1; exp_n <= $EXP_N; exp_n++)); do
         log_debug "Starting $exp_n experiment"
         ID_EXP=exp-$exp_n
         RUN_TEST_TCP="false"
-        exec_net_test "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU $ID_EXP "${PKT_BYTES[@]}"
-        parse_test "$CNI" "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU $ID_EXP "${PKT_BYTES[@]}"
+        exec_net_test "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU "$ID_EXP" "${PKT_BYTES[@]}"
+        parse_test "$CNI" "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU "$ID_EXP" "${PKT_BYTES[@]}"
         cd "${KITES_HOME}/pod-shared" || {
             log_error "Failure"
             exit 1
@@ -1047,8 +1045,8 @@ if $repeatable; then
     done
 else
     ID_EXP=exp-$EXP_N
-    exec_net_test "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU $ID_EXP "${PKT_BYTES[@]}"
-    parse_test "$CNI" "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU $ID_EXP "${PKT_BYTES[@]}"
+    exec_net_test "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF $RUN_TEST_CPU "$ID_EXP" "${PKT_BYTES[@]}"
+    parse_test "$CNI" "$N" $RUN_TEST_TCP $RUN_TEST_UDP $RUN_TEST_CPU "$ID_EXP" "${PKT_BYTES[@]}"
 fi
 
 if $RUN_TEST_UDP; then
