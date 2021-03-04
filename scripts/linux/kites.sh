@@ -705,14 +705,17 @@ function compute_cpu_analysis_udp() {
         columns[$cpu_n]=$((5 + cpu_n))
     done
     for ((minion_n = 1; minion_n <= $N; minion_n++)); do
-        INPUT=cpu-k8s-minion-${minion_n}-$CPU_TEST-${bytes[0]}bytes
+        if [ $minion_n -eq 1 ]; then
+            INPUT=cpu-k8s-master-1-$CPU_TEST-${bytes[0]}bytes
+        else
+            previous=$((minion_n - 1))
+            INPUT=cpu-k8s-minion-${previous}-$CPU_TEST-${bytes[0]}bytes
+        fi
         columns_n=$(head -1 ${INPUT}.csv | sed 's/[^,]//g' | wc -c)
         cpus_minion=$((columns_n - 6))
-        for ((cpu_n=0; cpu_n<$cpus_minion; cpu_n++)); do
-            minions[${#minions[@]}]="cpu${cpu_n}-from-minion-${minion_n}"
-        done
         col=$((columns[-1] + $columns_n))
         for ((cpu_n=0; cpu_n<$cpus_minion; cpu_n++)); do
+            minions[${#minions[@]}]="cpu${cpu_n}-from-minion-${minion_n}"
             col=$((col + cpu_n))
             columns[${#columns[@]}]="$col"
         done
