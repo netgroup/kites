@@ -124,9 +124,9 @@ function create_udp_traffic_single_pod_flannel() {
                     declare mac_addr_pod="MAC_ADDR_POD_$i"
                     declare mac_addr_minion="MAC_ADDR_MINION_$i"
                     if [ "$V" == "4" ]; then
-                        declare ip_pod="POD_IP_$i"
+                        declare ip_pod="POD_IP_$j"
                     elif [ "$V" == "6" ]; then
-                        declare ip_pod="POD_IP6_$i"
+                        declare ip_pod="POD_IP6_$j"
                     fi
                     if [ $i -eq $j ] && $RUN_TEST_SAME; then
                         create_udp_packet "$MAC_ADDR_SINGLE_POD" "${!mac_addr_pod}" "${!s_pod_ip}" "${!ip_pod}" $byte singlePodToPod$j single-pod $CNI $V
