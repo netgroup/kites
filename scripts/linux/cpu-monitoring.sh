@@ -86,8 +86,9 @@ function start_cpu_monitor_node() {
 	sleep 2
 	while true; do
 		DATE=$(date "+%Y-%m-%d %H:%M:%S")
+		CPU_AVG=$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1}')
 		CPU_USAGE=$(top 1 -bn1 | grep "Cpu" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1}' | sed -z 's/\n/,/g;s/,$/\n/')
-		SINGLE_LINE="$PPS, $CONFIG, $CONFIG_CODE, $TEST_TYPE, $DATE, $CPU_USAGE, %"
+		SINGLE_LINE="$PPS, $CONFIG, $CONFIG_CODE, $TEST_TYPE, $DATE, $CPU_AVG, $CPU_USAGE, %"
 		echo "$SINGLE_LINE" >>"cpu-$HOSTNAME-$CPU_TEST-${BYTE}bytes.csv"
 		#top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1"%"}' >> cpu-$HOSTNAME.txt
 		sleep 1

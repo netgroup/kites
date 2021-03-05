@@ -50,8 +50,8 @@ RUN_IPV4_ONLY="true"
 RUN_IPV6_ONLY="false"
 PKT_BYTES=(100)
 PPS_MIN=10000
-PPS_MAX=40000
-PPS_INC=2000
+PPS_MAX=20000
+PPS_INC=10000
 export PPS_MIN PPS_MAX PPS_INC
 repeatable="false"
 monitoing="false"
@@ -705,24 +705,25 @@ function compute_cpu_analysis_udp() {
         columns[$cpu_n]=$((5 + cpu_n))
     done
     for ((minion_n = 1; minion_n <= $N; minion_n++)); do
+        minions[${#minions[@]}]="cpu_avg_minion-${minion_n}"
         INPUT=cpu-k8s-minion-${minion_n}-$CPU_TEST-${bytes[0]}bytes
         columns_n=$(head -1 ${INPUT}.csv | sed 's/[^,]//g' | wc -c)
         cpus_minion=$((columns_n - 6))
-        for ((cpu_n=0; cpu_n<$cpus_minion; cpu_n++)); do
-            minions[${#minions[@]}]="cpu${cpu_n}-from-minion-${minion_n}"
-            # col=$((col + cpu_n))
-            # columns[${#columns[@]}]="$col"
-        done
+        if [ $cpus_minion -gt 1 ]; then
+            for ((cpu_n=0; cpu_n<$cpus_minion; cpu_n++)); do
+                minions[${#minions[@]}]="cpu${cpu_n}-from-minion-${minion_n}"
+            done
+        fi
     done
-    # columns[${#columns[@]}]=$((columns[-1] + 1))
-    # columns[${#columns[@]}]=$((columns[-1] + 1))
-
-    # printf -v columns_comma '%s,' "${columns[@]}"
     printf -v minions_comma '%s,' "${minions[@]}"
-    for ((cpu_n=0; cpu_n<$cpus_master; cpu_n++)); do
-        cpu_from_master[$cpu_n]="cpu${cpu_n}-from-master"
-    done
+    cpu_from_master[${#cpu_from_master[@]}]="cpu_avg_master"
+    if [ $cpus_master -gt 1 ]; then
+        for ((cpu_n=0; cpu_n<$cpus_master; cpu_n++)); do
+            cpu_from_master[${#cpu_from_master[@]}]="cpu${cpu_n}-from-master"
+        done
+    fi
     printf -v cpu_master_comma '%s,' "${cpu_from_master[@]}"
+   
 
     for byte in "${bytes[@]}"; do
         echo "PPS, C, CONFIG, TEST_TYPE, ${cpu_master_comma%,}, ${minions_comma%,}, rx/tx, txed/totx" >"cpu-usage-${CNI}-${CPU_TEST}-${byte}bytes.csv"
@@ -742,27 +743,35 @@ function compute_cpu_analysis_udp() {
             else
                 cpus=$cpus_minion
             fi
-            unset cpu_avg_n
+            
             for ((pps = $PPS_MIN; pps <= $PPS_MAX; pps += $PPS_INC)); do
+                unset cpu_avg_n
                 # echo ${cpu_avg_a[*]}
-                for ((cpu_n=0; cpu_n<$cpus; cpu_n++)); do
-                    cpu_avg_n[$cpu_n]="cpu_avg"
-                done
+                cpu_avg_n[${#cpu_avg_n[@]}]="cpu_avg"
+                if [ $cpus -gt 1 ]; then
+                    for ((cpu_n=0; cpu_n<$cpus; cpu_n++)); do
+                        cpu_avg_n[${#cpu_avg_n[@]}]="cpu${cpu_n}"
+                    done
+                fi
                 printf -v cpu_avg_comma '%s,' "${cpu_avg_n[@]}"
                 echo "pps, c, config, test_type, ${cpu_avg_comma%,}, rx/tx, txed/totx" >>"cpu_usage_${files[i]}.csv"
                 awk -F"," '$1=='$pps'' ${files[i]}.csv >temp_pps.csv
-                unset cpu_avg
                 for config in "${RUN_CONFIG[@]}"; do
+                    unset cpu_avg
                     awk -F, '$3=='${RUN_CONFIG_CODE[$config]}'' temp_pps.csv >temp${config}.csv
                     udp_results=$(awk -F, '$2=='$pps' && $3=='${RUN_CONFIG_CODE[$config]}' { print $5","$6 }' ${KITES_HOME}/pod-shared/tests/${CNI}/udp_results_${CNI}_${byte}bytes.csv)
                     # echo "udp_res = $udp_results"
                     if ([[ ${config} == "samepod" ]] || [[ ${config} == "samenode" ]]); then
                         for ((minion_n = 1; minion_n <= $N; minion_n++)); do
+                            unset cpu_avg
                             awk -F"," '$4 ~ /'k8s-minion-$minion_n'/' temp${config}.csv >temp_minion.csv
                             if [ -s temp_minion.csv ]; then
-                                for ((cpu_n=0; cpu_n<$cpus; cpu_n++)); do
-                                    cpu_avg[$cpu_n]=$(awk -F',' '{sum+=$'$((6 + $cpu_n))'; ++n} END { print sum/n }' <temp_minion.csv)
-                                done
+                                cpu_avg[${#cpu_avg[@]}]=$(awk -F',' '{sum+=$6; ++n} END { print sum/n }' <temp_minion.csv)
+                                if [ $cpus -gt 1 ]; then
+                                    for ((cpu_n=0; cpu_n<$cpus; cpu_n++)); do
+                                        cpu_avg[${#cpu_avg[@]}]=$(awk -F',' '{sum+=$'$((7 + $cpu_n))'; ++n} END { print sum/n }' <temp_minion.csv)
+                                    done
+                                fi
                                 printf -v cpuavg_comma '%s,' "${cpu_avg[@]}"
                                 echo "$pps, ${RUN_CONFIG_CODE[$config]}, ${config}, k8s-minion-$minion_n, ${cpuavg_comma%,}, $udp_results" >>cpu_usage_${files[i]}.csv
                             fi
@@ -771,15 +780,18 @@ function compute_cpu_analysis_udp() {
                         for ((m_i = 1; m_i <= $N; m_i++)); do
                             for ((m_j = 1; m_j <= $N; m_j++)); do
                                 if [ $m_j -ne $m_i ]; then
-                                    for ((cpu_n=0; cpu_n<$cpus; cpu_n++)); do
-                                        awk -F"," '$4 ~ /'k8s-minion-${m_i}TOk8s-minion-${m_j}'/' temp${config}.csv >temp_minion.csv
-                                        count=$(awk -F',' 'BEGIN {n=0} $'$((6 + $cpu_n))'==100 {n++} END {print n}' <temp_minion.csv)
-                                        total=$(awk -F',' '{n++} END {print n}' <temp_minion.csv)
-                                        percentage=$(calc 0.75*$total)
-                                        if (($(echo "$count $percentage" | awk '{print ($1 > $2)}'))); then
-                                            cpu_avg[$cpu_n]=100
-                                        else
-                                            cpu_avg[$cpu_n]=$(awk -F',' '{sum+=$'$((6 + $cpu_n))'; ++n} END { print sum/n }' <temp_minion.csv)
+
+                                    for ((cpu_n=0; cpu_n<=$cpus; cpu_n++)); do
+                                        if ! ( [ $cpus -eq 1 ] && [ $cpu_n -eq 1 ] ); then
+                                            awk -F"," '$4 ~ /'k8s-minion-${m_i}TOk8s-minion-${m_j}'/' temp${config}.csv >temp_minion.csv
+                                            count=$(awk -F',' 'BEGIN {n=0} $'$((6 + $cpu_n))'==100 {n++} END {print n}' <temp_minion.csv)
+                                            total=$(awk -F',' '{n++} END {print n}' <temp_minion.csv)
+                                            percentage=$(calc 0.75*$total)
+                                            if (($(echo "$count $percentage" | awk '{print ($1 > $2)}'))); then
+                                                cpu_avg[$cpu_n]=100
+                                            else
+                                                cpu_avg[$cpu_n]=$(awk -F',' '{sum+=$'$((6 + $cpu_n))'; ++n} END { print sum/n }' <temp_minion.csv)
+                                            fi
                                         fi
                                     done
                                     printf -v cpuavg_comma '%s,' "${cpu_avg[@]}"
@@ -795,9 +807,12 @@ function compute_cpu_analysis_udp() {
                 rm temp_pps.csv
             done
             unset columns
-            for ((cpu_n=0; cpu_n<$cpus; cpu_n++)); do
-                columns[${#columns[@]}]=$((5 + cpu_n))
-            done
+            columns[${#columns[@]}]=5
+            if [ $cpus -gt 1 ]; then
+                for ((cpu_n=0; cpu_n<$cpus; cpu_n++)); do
+                    columns[${#columns[@]}]=$((6 + cpu_n))
+                done
+            fi
             rx_n=$((columns[-1] + 1))
             tx_n=$((columns[-1] + 2))
             echo "results #: $rx_n,$tx_n"
