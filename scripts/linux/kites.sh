@@ -705,27 +705,20 @@ function compute_cpu_analysis_udp() {
         columns[$cpu_n]=$((5 + cpu_n))
     done
     for ((minion_n = 1; minion_n <= $N; minion_n++)); do
-        if [ $minion_n -eq 1 ]; then
-            INPUT=cpu-k8s-master-1-$CPU_TEST-${bytes[0]}bytes
-        else
-            previous=$((minion_n - 1))
-            INPUT=cpu-k8s-minion-${previous}-$CPU_TEST-${bytes[0]}bytes
-        fi
+        INPUT=cpu-k8s-minion-${minion_n}-$CPU_TEST-${bytes[0]}bytes
         columns_n=$(head -1 ${INPUT}.csv | sed 's/[^,]//g' | wc -c)
         cpus_minion=$((columns_n - 6))
-        col=$((columns[-1] + $columns_n))
         for ((cpu_n=0; cpu_n<$cpus_minion; cpu_n++)); do
             minions[${#minions[@]}]="cpu${cpu_n}-from-minion-${minion_n}"
-            col=$((col + cpu_n))
-            columns[${#columns[@]}]="$col"
+            # col=$((col + cpu_n))
+            # columns[${#columns[@]}]="$col"
         done
     done
-    columns[${#columns[@]}]=$((columns[-1] + 1))
-    columns[${#columns[@]}]=$((columns[-1] + 1))
+    # columns[${#columns[@]}]=$((columns[-1] + 1))
+    # columns[${#columns[@]}]=$((columns[-1] + 1))
 
-    printf -v columns_comma '%s,' "${columns[@]}"
+    # printf -v columns_comma '%s,' "${columns[@]}"
     printf -v minions_comma '%s,' "${minions[@]}"
-    
     for ((cpu_n=0; cpu_n<$cpus_master; cpu_n++)); do
         cpu_from_master[$cpu_n]="cpu${cpu_n}-from-master"
     done
@@ -742,7 +735,7 @@ function compute_cpu_analysis_udp() {
             INPUT=cpu-k8s-minion-${minion_n}-$CPU_TEST-${byte}bytes
             files[$minion_n]=$INPUT
         done
-
+        
         for i in "${!files[@]}"; do
             if [ $i -eq 0 ]; then
                 cpus=$cpus_master
@@ -795,16 +788,29 @@ function compute_cpu_analysis_udp() {
                             done
                         done
                     fi
-                    cpu_file[i]=cpu_usage_${files[i]}.csv
+                    
                     rm temp_minion.csv
                     rm temp${config}.csv
                 done
                 rm temp_pps.csv
             done
-
+            unset columns
+            for ((cpu_n=0; cpu_n<$cpus; cpu_n++)); do
+                columns[${#columns[@]}]=$((5 + cpu_n))
+            done
+            rx_n=$((columns[-1] + 1))
+            tx_n=$((columns[-1] + 2))
+            echo "results #: $rx_n,$tx_n"
+            printf -v columns_comma '%s,' "${columns[@]}"
+            echo $i
+            echo ${columns_comma%,}
+            cut -d, -f "${columns_comma%,}" cpu_usage_${files[i]}.csv >temp_cpus$i.csv
+            cut -d, -f $rx_n,$tx_n cpu_usage_${files[i]}.csv >res_udp.csv
+            cut -d, -f 1,2,3,4 cpu_usage_${files[i]}.csv >info.csv
+            cpu_file[i]=temp_cpus$i.csv
         done
-        paste -d, ${cpu_file[*]} | cut -d, -f 1,2,3,4,"${columns_comma%,}" >>cpu-usage-${CNI}-${CPU_TEST}-${byte}bytes.csv
-        rm ${cpu_file[*]}
+        paste -d, info.csv ${cpu_file[*]} res_udp.csv >>cpu-usage-${CNI}-${CPU_TEST}-${byte}bytes.csv
+        # rm ${cpu_file[*]}
         mv "cpu-usage-${CNI}-${CPU_TEST}-${byte}bytes.csv" "${KITES_HOME}/tests/${CNI}/${ID_EXP}/"
     done
 }
