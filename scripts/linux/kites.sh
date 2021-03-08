@@ -699,6 +699,9 @@ function compute_cpu_analysis_udp() {
         log_error "Failure"
         exit 1
     }
+    
+    unset minions
+    unset cpu_from_master
 
     cpus_master=$(cat /proc/cpuinfo | grep processor | wc -l)
     for ((cpu_n=0; cpu_n<$cpus_master; cpu_n++)); do
