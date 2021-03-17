@@ -7,14 +7,15 @@ import sys
 import os
 import re
 
-# cni = sys.argv[1]
-# byte = sys.argv[2]
-# N = sys.argv[3]
-# kites_home = "/vagrant/ext/kites/"
+cni = sys.argv[1]
+byte = sys.argv[2]
+N = sys.argv[3]
+run_test_same = sys.argv[4]
+run_test_samenode = sys.argv[5]
+run_test_diffnode = sys.argv[6]
+kites_home = "/vagrant/ext/kites/"
 
-run_test_same=False
-run_test_samenode=False
-run_test_diffnode=True
+
 if run_test_diffnode:
     config_name="diffnode"
 elif run_test_same:
@@ -22,21 +23,18 @@ elif run_test_same:
 elif run_test_samenode:
     config_name="samenode"
 
-kites_home = "../"
-byte = 100
-N = 3
-
 tests_path =  os.path.join(kites_home, "tests")
-tests_path =  "c:/Users/carla/Documents/compute-plot/"
-total_cni=None
+total_cni = None
 total_cpu = None
+cni_eval = []
+
 with os.scandir(tests_path) as listOfEntries:
     for entry_cni in listOfEntries:
         if entry_cni.is_dir():
             print(entry_cni)
             cni=entry_cni.name
+            cni_eval.append(entry_cni.name)
             cni_tests_path = os.path.join(kites_home, "tests", cni)
-            cni_tests_path = "c:/Users/carla/Documents/compute-plot/"+cni
             EXP_N = 0
             total = None
             info_columns = None
@@ -50,7 +48,6 @@ with os.scandir(tests_path) as listOfEntries:
                             id_exp = entry.name
                             f_name = 'cpu-usage-{}-UDP-{}bytes.csv'.format(cni, byte)
                             path = os.path.join(kites_home, "tests", cni, id_exp, f_name)
-                            path = "c:/Users/carla/Documents/compute-plot/"+cni+"/"+id_exp+"/"+f_name+""
                             df = pd.read_csv(path)
                             indexNames = df[df['PPS'] == 'pps'].index
                             current = df.drop(indexNames)
@@ -74,10 +71,9 @@ with os.scandir(tests_path) as listOfEntries:
             total.columns = total.columns.str.replace(' ', '')
             total['TEST_TYPE'] = total['TEST_TYPE'].str.replace(' ', '')
             total['CONFIG'] = total['CONFIG'].str.replace(' ', '')
-            # print(total)
+
             pps_grouped = total.groupby(['PPS'], sort=False)
 
-            
             cpu_col = [col for col in total.columns if re.search('cpu.+-from-minion-1', col)]
             if not cpu_col: cpu_col = ["no"]
             # print(cpu_col)
@@ -92,8 +88,6 @@ with os.scandir(tests_path) as listOfEntries:
                     # print(pps_df)
                     config_group = pps_df.groupby(['CONFIG'])
                     for config, test_df in config_group:
-                        # print(config)
-                        # print(test_df)
                         # filter by TEST_TYPE k8s-minion-XTOk8s-minion-Y
                         for minion_i in range(1, int(N)+1, 1):
                             for minion_j in range(1, int(N)+1, 1):
@@ -133,12 +127,8 @@ with os.scandir(tests_path) as listOfEntries:
                                         cpu_rx = test_df.loc[row_conf, col_rx]
                                         
                                         cpu_master = test_df.loc[row_conf, col_master]
-                                        # print("print parametri")
-                                        # print(group_name, rxtx, txedtx,
-                                        #                 cpu_tx.item(), cpu_rx.item(), cpu_master.item(), cpu_oth)
                                         pps_rows.append([group_name, rxtx, txedtx,
                                                         cpu_tx.item(), cpu_rx.item(), cpu_master.item(), cpu_oth])
-
 
                                         if 'no' not in cpu_col:
                                             col_single_tx = "cpu"+str(index)+"-from-minion-"+str(minion_i)
@@ -162,7 +152,6 @@ with os.scandir(tests_path) as listOfEntries:
                             cpu_oth_std = pps_diffnodes["cpu_oth"].std().item()
                             # print(group_name, rxtx, txedtx, cpu_tx_avg, cpu_tx_std, cpu_rx_avg, cpu_rx_std)
                             
-
                             rows.append([group_name, rxtx, txedtx,
                                         cpu_tx_avg, cpu_tx_std, cpu_rx_avg, cpu_rx_std,
                                             cpu_master_avg, cpu_master_std, cpu_oth_avg, cpu_oth_std])
@@ -207,16 +196,13 @@ with os.scandir(tests_path) as listOfEntries:
                     plt.show()
                     plt.savefig(os.path.join(cni_tests_path, cni+'_'+str(byte)+'bytes'+str(EXP_N)+'exp.png'))
 
-
-
-
-                # Save rxtx-txedtotx of cni on a column of total_thr df
-                cni_df = diffnode.loc[:, ['rx/tx','txed/totx']]
-                cni_df.columns = ['rx/tx_'+cni, 'txed/totx_'+cni ]
-                if total_cni is not None:
-                    total_cni= pd.concat([total_cni, cni_df.reindex(total_cni.index)], axis=1)
-                else:
-                    total_cni = pd.concat([diffnode.loc[:, ['PPS']], cni_df.reindex(diffnode.loc[:, ['PPS']].index)], axis=1)
+                    # Save rxtx-txedtotx of cni on a column of total_thr df
+                    cni_df = diffnode.loc[:, ['rx/tx','txed/totx']]
+                    cni_df.columns = ['rx/tx_'+cni, 'txed/totx_'+cni ]
+                    if total_cni is not None:
+                        total_cni= pd.concat([total_cni, cni_df.reindex(total_cni.index)], axis=1)
+                    else:
+                        total_cni = pd.concat([diffnode.loc[:, ['PPS']], cni_df.reindex(diffnode.loc[:, ['PPS']].index)], axis=1)
 
 
                 if 'no' not in cpu_col:
@@ -255,30 +241,22 @@ with os.scandir(tests_path) as listOfEntries:
                 plt.show()
                 plt.savefig(os.path.join(cni_tests_path, cni+'_'+str(byte)+'bytes'+str(EXP_N)+'exp_single_cpu.png'))
 
+print(total_cni)
+
+plt.figure(figsize=(20,15))
+plt.ylim((85, 101)) 
+plt.grid(axis='y', zorder=0)
+
+plt.xlabel("pps", fontsize=15)
+plt.title("Comparison "+config_name,fontsize=20)
+
+print(cni_eval)
+
+total_cni['PPS'] = total_cni['PPS'].astype(str)
+for cni in cni_eval:
+    errorbar_txedtx = plt.errorbar(total_cni['PPS'], 'txed/totx_'+str(cni), data=total_cni, zorder=3)
+    # errorbar_rxtx = plt.errorbar(total_cni['PPS'], 'rx/tx_'+str(cni),  data=total_cni, zorder=3)
 
 
-# # total_cni= pd.read_csv('c:/Users/carla/Documents/compute-plot/pinningcomp1cpu.csv')
-# print(total_cni)
-# plt.figure(figsize=(20,15))
-# plt.ylim((85, 101)) 
-# plt.grid(axis='y', zorder=0)
-
-# plt.xlabel("pps", fontsize=15)
-# plt.title("Comparison "+config_name,fontsize=20)
-
-# total_cni['PPS'] = total_cni['PPS'].astype(str)
-# errorbar_txedtx_calicoIPIP = plt.errorbar(total_cni['PPS'], 'txed/totx_calicoIPIP', data=total_cni, zorder=3)
-# # errorbar_txedtx_calicoIPIP = plt.errorbar(total_cni['PPS'], 'txed/totx_calicoIPIP_2cpu', data=total_cni, zorder=3)
-# errorbar_txedtx_calicoVXLAN = plt.errorbar(total_cni['PPS'], 'txed/totx_calicoVXLAN',  data=total_cni, zorder=3)
-# errorbar_txedtx_flannel= plt.errorbar(total_cni['PPS'], 'txed/totx_flannel',  data=total_cni, zorder=3)
-# errorbar_txedtx__weavenet = plt.errorbar(total_cni['PPS'], 'txed/totx_weavenet',  data=total_cni, zorder=3)
-
-# # errorbar_rxtx_calicoIPIP = plt.errorbar(total_cni['PPS'], 'rx/tx_calicoIPIP',  data=total_cni, zorder=3)
-# # # errorbar_rxtx_calicoIPIP = plt.errorbar(total_cni['PPS'], 'rx/tx_calicoIPIP_2cpu',  data=total_cni, zorder=3)
-# # errorbar_rxtx_calicoVXLAN  = plt.errorbar(total_cni['PPS'], 'rx/tx_calicoVXLAN',  data=total_cni, zorder=3)
-# # errorbar_rxtx_flannel = plt.errorbar(total_cni['PPS'], 'rx/tx_flannel',  data=total_cni, zorder=3)
-# # errorbar_rxtx__weavenet = plt.errorbar(total_cni['PPS'], 'rx/tx_weavenet',  data=total_cni, zorder=3)
-
-# plt.legend(fontsize=10)
-# plt.show()
-# plt.savefig(os.path.join(cni_tests_path, cni+'_'+str(byte)+'bytes'+str(EXP_N)+'exp.png'))
+plt.legend(fontsize=10)
+plt.show()
