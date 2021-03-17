@@ -702,7 +702,8 @@ function compute_cpu_analysis_udp() {
     
     unset minions
     unset cpu_from_master
-
+    echo "minions"
+    echo ${minions[@]}
     cpus_master=$(cat /proc/cpuinfo | grep processor | wc -l)
     for ((cpu_n=0; cpu_n<$cpus_master; cpu_n++)); do
         columns[$cpu_n]=$((5 + cpu_n))
@@ -719,6 +720,9 @@ function compute_cpu_analysis_udp() {
         fi
     done
     printf -v minions_comma '%s,' "${minions[@]}"
+    echo "minions comma"
+    echo ${minions_comma%,}
+    
     cpu_from_master[${#cpu_from_master[@]}]="cpu_avg_master"
     if [ $cpus_master -gt 1 ]; then
         for ((cpu_n=0; cpu_n<$cpus_master; cpu_n++)); do
@@ -1110,7 +1114,22 @@ fi
 if $RUN_TEST_UDP; then
     for byte in "${PKT_BYTES[@]}"; do
         log_debug "Creating plot for packets of $byte bytes"
-        python3.7 ${KITES_HOME}/plot/compute-experiments-result.py $CNI $byte $N
+        for config in "${RUN_CONFIG[@]}"; do
+            if [[ ${config} == "samepod" ]]; then
+                RUN_TEST_SAME = "true"
+                RUN_TEST_SAMENODE="false"
+                RUN_TEST_DIFF="false"
+            elif [[ ${config} == "samenode" ]]; then
+                RUN_TEST_SAME="false"
+                RUN_TEST_SAMENODE="true"
+                RUN_TEST_DIFF="false"
+            elif [[ ${config} == "diffnode" ]]; then
+                RUN_TEST_SAME="false"
+                RUN_TEST_SAMENODE="false"
+                RUN_TEST_DIFF="true"
+            fi
+            python3.7 ${KITES_HOME}/plot/compute-experiments-result.py $CNI $byte $N $RUN_TEST_SAME $RUN_TEST_SAMENODE $RUN_TEST_DIFF
+        done
     done
 fi
 
