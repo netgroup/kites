@@ -1,0 +1,65 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+ name: prometheus-server
+ namespace: monitoring
+ labels:
+    app: prometheus
+spec:
+ replicas: 1
+ strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+ selector:
+   matchLabels:
+     app: prometheus
+ template:
+   metadata:
+     labels:
+       app: prometheus
+     annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+   spec:
+    #  serviceAccountName: prometheus
+     containers:
+     - name: prometheus
+       image: prom/prometheus
+       imagePullPolicy: IfNotPresent
+       args:
+         - '--storage.tsdb.path=/prometheus'
+         - '--config.file=/etc/prometheus/prometheus.yml'
+       ports:
+       - name: web
+         containerPort: 9090
+       volumeMounts:
+       - name: prometheus-config-volume
+         mountPath: /etc/prometheus/
+       - name: prometheus-data-volume
+         mountPath: /prometheus
+     volumes:
+      - name: prometheus-config-volume
+        configMap:
+         defaultMode: 420
+         name: prometheus-server-conf
+      # CHECK
+      - name: prometheus-data-volume
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-svc
+  namespace: monitoring
+spec:
+  selector:
+    app: prometheus
+  type: NodePort
+  ports:
+  - name: prometheus
+    protocol: TCP
+    port: 9090
+    nodePort: 30900
