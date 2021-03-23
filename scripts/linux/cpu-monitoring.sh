@@ -81,7 +81,7 @@ function start_cpu_monitor_node() {
         cpusa[$cpu_n]=$INPUT
     done
     printf -v cpus_comma '%s,' "${cpusa[@]}"
-	echo "PPS, CONFIG, CONFIG_CODE, TEST_TYPE, DATE, ${cpus_comma%,}, %" >>"cpu-$HOSTNAME-$CPU_TEST-${BYTE}bytes.csv"
+	echo "PPS, CONFIG, CONFIG_CODE, TEST_TYPE, DATE, CPU_AVG, ${cpus_comma%,}, %" >>"cpu-$HOSTNAME-$CPU_TEST-${BYTE}bytes.csv"
 
 	sleep 2
 	while true; do

@@ -276,7 +276,29 @@ function create_udp_packet_IPv4() {
     const16($UDP_LEN),
     const16(0),
     fill('B', $PAYLOAD),
+    }
+    
+    {
+    ${MAC_ADDR_DST},
+    ${MAC_ADDR_SRC},
+    0x08, 0x00,
+    0b01000101, 0,
+    const16($IP_LEN),
+    const16(2),
+    0b01000000, 0,
+    64,
+    17,
+    csumip(14, 33),
+    ${IP_ADDR_SRC},
+    ${IP_ADDR_DST},
+    const16(9),
+    const16(6666),
+    const16($UDP_LEN),
+    const16(0),
+    fill('B', $PAYLOAD),
     }" >${FILE_NAME}.cfg
+
+
 }
 
 function create_udp_packet_IPv6() {
@@ -302,8 +324,8 @@ function create_udp_packet_IPv6() {
     log_debug "$IP_ADDR_DST"
 
     echo -n "{
-    ${MAC_ADDR_DST}
-    ${MAC_ADDR_SRC}
+    ${MAC_ADDR_DST},
+    ${MAC_ADDR_SRC},
     0x86, 0xdd,
     0x60, 0x0b, 0x1d, 0x04,
     const16($UDP_LEN),
